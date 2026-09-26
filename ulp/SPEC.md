@@ -1,7 +1,10 @@
-# Usage Ledger Protocol (ULP) — version 1.0 (draft)
+# Usage Ledger Protocol (ULP) — version 1.0 (ratified)
 
 > Extracted from burn's [SPEC.md](../SPEC.md) (v1.0, the binding base) and
-> [SPEC-2.md](../SPEC-2.md) §B/§E/§F, now living in its own home: normative
+> [SPEC-2.md](../SPEC-2.md) §B/§E/§F, now ratified and living in its own home:
+> **[github.com/aashish254/ulp](https://github.com/aashish254/ulp)** is the
+> normative source; this copy is vendored inside burn so one checkout referees
+> both. Normative
 > schema in [schema-1.0.json](schema-1.0.json), the conformance kit in
 > [conformance/README.md](conformance/README.md), governance in
 > [rfc/README.md](rfc/README.md), and decisions in [CHANGELOG.md](CHANGELOG.md).

@@ -4,8 +4,10 @@ A tiny, privacy-first wire format for **what your coding agents cost**: tokens,
 dollars, provenance, and the work they attach to — as plain JSON a team can
 merge across machines without a server, an account, or a network.
 
-This folder is the protocol's home. It is self-contained: nothing here needs
-Node, Python, or any particular tool — just JSON and this repository's files.
+This directory is a vendored mirror inside burn; the normative home is
+**[github.com/aashish254/ulp](https://github.com/aashish254/ulp)**. It is
+self-contained: nothing here needs Node, Python, or any particular tool — just
+JSON and this repository's files.
 
 ## What's here
 
@@ -40,7 +42,8 @@ fields with changed meaning, or new merge rules require an
 
 ## Status
 
-1.0 (draft): the two-implementation gate is met. Ratification = the version
-field stops being a draft in [CHANGELOG.md](CHANGELOG.md) once the spec is cut
-into its own repository; until then this directory is vendored inside burn so
-CI can referee both homes with one checkout.
+**1.0 — ratified.** The two-implementation gate is met and the spec now lives
+in its own repository: **[github.com/aashish254/ulp](https://github.com/aashish254/ulp)**
+is the normative source. This directory is a vendored mirror inside burn so CI
+can referee both homes from one checkout. Version 1.1+ requires an
+[RFC](rfc/README.md).

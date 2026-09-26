@@ -18,8 +18,10 @@ The behavior below is governed by written contracts — **[SPEC.md](SPEC.md)** (
 usage-event model, cost provenance, JSON schema, exit codes) and
 **[SPEC-2.md](SPEC-2.md)** (v2: work attribution, gates, doctor, mergeable
 bundles) and **[SPEC-3-5.md](SPEC-3-5.md)** (v3–v5: the open protocol, history,
-plan gates). The ledger format itself is a standalone protocol: ULP, in
-**[ulp/](ulp/README.md)** — burn is its reference implementation #1.
+plan gates). The ledger format itself is a standalone protocol: ULP 1.0,
+spec'd and conformance-tested at **[github.com/aashish254/ulp](https://github.com/aashish254/ulp)**
+(vendored here under [ulp/](ulp/README.md) so one checkout runs both suites) —
+burn is ULP's reference implementation #1.
 Dashboards and CI can build on the specs, not on this CLI.
 
 ```
