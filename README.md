@@ -6,6 +6,8 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![protocol](https://img.shields.io/badge/ULP-1.0-blueviolet)
 
+**🌐 [Live demo →](https://aashish254.github.io/burn/)**
+
 **Where did your AI budget actually go — and what did each feature cost?**
 
 `burn` is a local, zero-dependency ledger that reads the transcripts your coding
