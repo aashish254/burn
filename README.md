@@ -1,5 +1,11 @@
 # 🔥 burn
 
+[![CI](https://github.com/aashish254/burn/actions/workflows/test.yml/badge.svg)](https://github.com/aashish254/burn/actions/workflows/test.yml)
+![node](https://img.shields.io/badge/node-%E2%89%A522.5-brightgreen)
+![deps](https://img.shields.io/badge/dependencies-0-brightgreen)
+![license](https://img.shields.io/badge/license-MIT-blue)
+![protocol](https://img.shields.io/badge/ULP-1.0-blueviolet)
+
 **Where did your AI budget actually go — and what did each feature cost?**
 
 `burn` is a local, zero-dependency ledger that reads the transcripts your coding
