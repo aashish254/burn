@@ -1,5 +1,10 @@
 # ULP — Usage Ledger Protocol
 
+[![conformance](https://github.com/aashish254/ulp/actions/workflows/conformance.yml/badge.svg)](https://github.com/aashish254/ulp/actions/workflows/conformance.yml)
+![version](https://img.shields.io/badge/ULP-1.0-blueviolet)
+![license](https://img.shields.io/badge/license-MIT-blue)
+![impls](https://img.shields.io/badge/reference%20impls-2-green)
+
 A tiny, privacy-first wire format for **what your coding agents cost**: tokens,
 dollars, provenance, and the work they attach to — as plain JSON a team can
 merge across machines without a server, an account, or a network.
