@@ -87,13 +87,6 @@
   .lede{font-size:clamp(18px,2vw,21px);color:var(--graphite);max-width:40ch;margin-top:22px;line-height:1.5}
   .lede b{color:var(--ink);font-weight:500}
   .cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:30px}
-  .cmd{
-    font-family:var(--mono);font-size:13.5px;background:var(--slate);color:var(--slate-ink);
-    padding:10px 13px;border-radius:8px;display:inline-flex;align-items:center;gap:9px;
-    border:1px solid var(--slate-line);
-  }
-  .cmd .dollar{color:var(--slate-mute)}
-  .cmd .param{color:var(--slate-mute)}
   .btn{
     text-decoration:none;font-weight:500;font-size:14.5px;padding:10px 16px;border-radius:8px;
     display:inline-flex;align-items:center;gap:9px;transition:transform .12s ease, background .15s ease, border-color .15s ease;
@@ -198,7 +191,26 @@
   .ulp-linknote{font-family:var(--mono);font-size:12.5px;color:var(--slate-mute)}
 
   /* ---------- install ---------- */
-  .install-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,54px);align-items:center}
+  .install-cmd{
+    display:flex;align-items:center;gap:14px;margin-top:30px;
+    background:var(--slate);border:1px solid var(--slate-line);border-radius:10px;
+    padding:16px 16px 16px 18px;overflow-x:auto;
+  }
+  .install-line{
+    font-family:var(--mono);font-size:14px;color:var(--slate-ink);white-space:nowrap;
+    -webkit-user-select:all;user-select:all;
+  }
+  .copy-btn{
+    margin-left:auto;flex:none;font-family:var(--sans);font-size:13.5px;font-weight:500;
+    background:transparent;color:var(--slate-mute);border:1px solid var(--slate-line);
+    border-radius:7px;padding:7px 14px;cursor:pointer;transition:color .15s ease,border-color .15s ease,background .15s ease;
+    touch-action:manipulation;
+  }
+  .copy-btn:hover{color:var(--slate-ink);border-color:var(--slate-mute)}
+  .copy-btn.copied{color:#77b08f;border-color:#2e4a3d}
+  .install-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,54px);align-items:center;margin-top:30px}
+  .install-alt{margin-top:30px;font-size:14.5px;color:var(--graphite);max-width:80ch}
+  .install-alt .mono{font-size:13px;color:var(--ink)}
   .steps{list-style:none;margin:0;padding:0;counter-reset:s}
   .steps li{counter-increment:s;display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--rule);align-items:baseline}
   .steps li:last-child{border-bottom:0}
@@ -267,7 +279,7 @@
       <a href="#how">How it works</a>
       <a href="#protocol">ULP</a>
       <a href="#install">Install</a>
-      <a class="gh" href="https://github.com/aashish254/burn"><span class="gh-btn"><svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.58-.71-.34.17-.02-.6.99-.79.6.08 1.6-.09 1.99-.9.1-.17.32-.66.58-.81-.02-.2-.19-.55-.35-.68-.9-.1-1.79-.9-1.79-.9-1.06-.68-.14-1.28-.14-1.28.82-.06.94-.9.94-.9.55-.94 1.44-.67 1.79-.51.06-.4.21-.67.38-.82-1.37-.16-2.81-.68-2.81-3.05 0-.67.24-1.22.63-1.65-.06-.15-.27-.79.06-1.63 0 0 .52-.17 1.7.63.49-.14 1.02-.2 1.55-.21.53.01 1.06.07 1.55.21 1.18-.8 1.7-.63 1.7-.63.33.84.12 1.48.06 1.63.39.43.63.98.63 1.65 0 2.37-1.45 2.89-2.83 3.04.22.19.42.57.42 1.14 0 .82-.01 1.48-.01 1.69 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> GitHub</span></a>
+      <a class="gh" href="https://github.com/aashish254/burn" target="_blank" rel="noopener"><span class="gh-btn"><svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.58-.71-.34.17-.02-.6.99-.79.6.08 1.6-.09 1.99-.9.1-.17.32-.66.58-.81-.02-.2-.19-.55-.35-.68-.9-.1-1.79-.9-1.79-.9-1.06-.68-.14-1.28-.14-1.28.82-.06.94-.9.94-.9.55-.94 1.44-.67 1.79-.51.06-.4.21-.67.38-.82-1.37-.16-2.81-.68-2.81-3.05 0-.67.24-1.22.63-1.65-.06-.15-.27-.79.06-1.63 0 0 .52-.17 1.7.63.49-.14 1.02-.2 1.55-.21.53.01 1.06.07 1.55.21 1.18-.8 1.7-.63 1.7-.63.33.84.12 1.48.06 1.63.39.43.63.98.63 1.65 0 2.37-1.45 2.89-2.83 3.04.22.19.42.57.42 1.14 0 .82-.01 1.48-.01 1.69 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> GitHub</span></a>
     </nav>
   </div>
 </header>
@@ -282,8 +294,8 @@
         <h1>See what each feature <span class="under">actually cost.</span></h1>
         <p class="lede">burn reads the transcripts your agents already write to disk — <b>Claude Code, OpenCode, Codex, Gemini CLI</b> — and adds it up per repo, model, day and git branch. Honest about every dollar. <b>Nothing leaves your machine.</b></p>
         <div class="cta-row">
-          <code class="cmd"><span class="dollar">$</span> npm link <span class="param">burn</span></code>
-          <a class="btn btn-primary" href="https://github.com/aashish254/burn">Get the source</a>
+          <a class="btn btn-primary" href="#install">Install burn</a>
+          <a class="btn btn-ghost" href="https://github.com/aashish254/burn" target="_blank" rel="noopener">Get the source</a>
           <a class="btn btn-ghost" href="#protocol">Read the protocol</a>
         </div>
       </div>
@@ -422,8 +434,8 @@
             <div class="badge"><div class="n">1.0</div><div class="l">ratified<br>union identity, no double-count</div></div>
           </div>
           <div class="ulp-foot">
-            <a class="btn btn-ulp" href="https://github.com/aashish254/ulp">Read ULP 1.0</a>
-            <a class="btn btn-line" href="https://github.com/aashish254/ulp/tree/main/conformance">Conformance kit</a>
+            <a class="btn btn-ulp" href="https://github.com/aashish254/ulp" target="_blank" rel="noopener">Read ULP 1.0</a>
+            <a class="btn btn-line" href="https://github.com/aashish254/ulp/tree/main/conformance" target="_blank" rel="noopener">Conformance kit</a>
           </div>
           <p class="ulp-linknote">Extensions live under <code style="font-family:var(--mono);color:#c8cfda">x-&lt;impl&gt;-*</code> namespaces. Core fields are additive-only across 1.x.</p>
         </div>
@@ -433,29 +445,35 @@
 
   <!-- INSTALL -->
   <section class="block wrap" id="install">
+    <div class="sec-head"><h2>Install in one paste</h2></div>
+    <p class="sec-intro">macOS or Linux with Node ≥ 22.5. The script downloads a checksum-verified release, links <code style="font-family:var(--mono);font-size:.92em">burn</code> into <span class="mono">~/.local/bin</span>, and touches nothing else. No account, no telemetry, no root.</p>
+
+    <div class="install-cmd">
+      <code class="install-line" id="install-cmd">curl -fsSL https://raw.githubusercontent.com/aashish254/burn/main/install.sh | bash</code>
+      <button class="copy-btn" data-copy="install-cmd" hidden>Copy</button>
+    </div>
+
     <div class="install-grid">
-      <div>
-        <div class="sec-head"><h2>Get it in a minute</h2></div>
-        <p class="sec-intro">One zero-dependency Node CLI. No install daemon, no account, no telemetry.</p>
-        <ol class="steps">
-          <li><span class="s">01</span><span class="t">Clone and link <code>npm link</code> — or run it straight from the checkout</span></li>
-          <li><span class="s">02</span><span class="t">Point it at your machine — it auto-discovers Claude Code, OpenCode, Codex &amp; Gemini logs</span></li>
-          <li><span class="s">03</span><span class="t">Read your ledger: <code>burn</code> · <code>burn work</code> · <code>burn doctor</code></span></li>
-        </ol>
-      </div>
+      <ol class="steps">
+        <li><span class="s">01</span><span class="t">Paste the command above — it installs <span class="mono">burn</span> in a few seconds</span></li>
+        <li><span class="s">02</span><span class="t">Run <code>burn</code> — it auto-discovers your Claude Code, OpenCode, Codex &amp; Gemini logs on disk</span></li>
+        <li><span class="s">03</span><span class="t">Read your ledger: <code>burn</code> · <code>burn work</code> · <code>burn doctor</code></span></li>
+      </ol>
       <div class="inst-term">
-        <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">install</span></div>
+        <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">your terminal</span></div>
         <div class="term-body">
-          <span class="row"><span class="p"><span class="pr">$</span> git clone https://github.com/aashish254/burn</span></span>
-          <span class="row"><span class="p"><span class="pr">$</span> cd burn <span class="f">&amp;&amp;</span> npm link</span></span>
-          <span class="row"><span class="sp"></span></span>
           <span class="row"><span class="p"><span class="pr">$</span> burn</span></span>
           <span class="row"><span class="hd">🔥 burn  local AI usage ledger</span></span>
           <span class="row"><span class="hd">  claude-code, opencode · 118 usage events</span></span>
           <span class="row"><span class="amt">$40.08</span> <span class="c">spent  18.28M tokens  cache <span class="g">50%</span></span></span>
+          <span class="row"><span class="sp"></span></span>
+          <span class="row"><span class="p"><span class="pr">$</span> burn work</span></span>
+          <span class="row"><span class="hd">main  <span class="bar">████████████████████</span> <span class="amt">$40.08</span>  <span class="z">[branch] 105k tok</span></span></span>
         </div>
       </div>
     </div>
+
+    <p class="install-alt">Prefer to build from source? <span class="mono">git clone https://github.com/aashish254/burn &amp;&amp; cd burn &amp;&amp; npm link</span> — or just run <span class="mono">node src/cli.js</span> from the checkout. An <span class="mono">npm</span> package is on the roadmap; until then these are the two official routes.</p>
   </section>
 </main>
 
@@ -467,10 +485,10 @@
         burn
       </a>
       <div class="foot-links">
-        <a href="https://github.com/aashish254/burn">burn</a>
-        <a href="https://github.com/aashish254/ulp">ULP</a>
-        <a href="https://github.com/aashish254/burn/blob/main/SPEC.md">spec</a>
-        <a href="https://github.com/aashish254/burn/blob/main/README.md">README</a>
+        <a href="https://github.com/aashish254/burn" target="_blank" rel="noopener">burn</a>
+        <a href="https://github.com/aashish254/ulp" target="_blank" rel="noopener">ULP</a>
+        <a href="https://github.com/aashish254/burn/blob/main/SPEC.md" target="_blank" rel="noopener">spec</a>
+        <a href="https://github.com/aashish254/burn/blob/main/README.md" target="_blank" rel="noopener">README</a>
       </div>
       <div class="foot-meta">MIT licensed · Node ≥ 22.5<br>built locally, ships honestly</div>
     </div>
@@ -480,6 +498,31 @@
     </p>
   </div>
 </footer>
+
+<script>
+  document.querySelectorAll(".copy-btn").forEach(function (btn) {
+    btn.hidden = false;
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent.trim();
+      function done() {
+        btn.textContent = "Copied";
+        btn.classList.add("copied");
+        setTimeout(function () { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        done();
+      }
+    });
+  });
+</script>
 
 </body>
 </html>

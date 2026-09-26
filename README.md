@@ -69,14 +69,31 @@ time. Nobody adds it up **across agents**, and nobody can tell you what
 
 ## Install
 
-It's a dependency-free Node CLI (Node ≥ 22.5, for the built-in `node:sqlite`).
-The npm package is `burn-usage`; the command you type is `burn`.
+macOS or Linux with Node ≥ 22.5 (for the built-in `node:sqlite`). One paste:
 
 ```bash
-npm i -g burn-usage        # → provides the `burn` command
-# or run from source:
-git clone https://github.com/aashish254/burn && cd burn && npm link
+curl -fsSL https://raw.githubusercontent.com/aashish254/burn/main/install.sh | bash
 ```
+
+The [installer](install.sh) verifies the release checksum, installs the CLI
+under `~/.burn-cli`, and links the `burn` command into `~/.local/bin`. Nothing
+else — no root, no account, no telemetry. Then:
+
+```bash
+burn          # your ledger: spend per repo, model, day — across agents
+burn work     # dollars per branch / feature / work unit
+burn doctor   # is anything wasting money?
+```
+
+From source instead:
+
+```bash
+git clone https://github.com/aashish254/burn && cd burn && npm link
+# or with no linking at all:  node src/cli.js
+```
+
+(The `burn-usage` npm package is on the roadmap; until it ships, these are the
+two official install routes.)
 
 ## How cost is computed (and why we never lie)
 
