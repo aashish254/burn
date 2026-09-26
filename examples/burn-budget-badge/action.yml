@@ -1,0 +1,60 @@
+name: "burn budget badge"
+description: "Comment the PR with what this branch's agent usage cost, and fail if over budget (burn exits 3)."
+inputs:
+  repo-label:
+    description: "Repository label as burn sees it (basename of the work dir by default)"
+    required: false
+    default: ""
+  max:
+    description: "Budget ceiling in USD for the period"
+    required: true
+  period:
+    description: "day | week | month | all"
+    required: false
+    default: "all"
+  burn-ref:
+    description: "git ref of the burn repo to install from"
+    required: false
+    default: "main"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Install burn (read-only ledger CLI; requires Node >= 22.5)
+      run: |
+        if [ -d "$RUNNER_TEMP/burn" ]; then rm -rf "$RUNNER_TEMP/burn"; fi
+        git clone --depth 1 --branch "${{ inputs.burn-ref }}" \
+          https://github.com/aashish254/burn.git "$RUNNER_TEMP/burn"
+        npm install -g "$RUNNER_TEMP/burn"
+      shell: bash
+
+    - name: Measure this branch
+      run: |
+        label="${{ inputs.repo-label }}"
+        [ -n "$label" ] || label="$(basename "$GITHUB_WORKSPACE")"
+        set +e
+        burn budget --repo "$label" --max "${{ inputs.max }}" \
+          --period "${{ inputs.period }}" --json > "$RUNNER_TEMP/budget.json"
+        rc=$?
+        set -e
+        if [ "$rc" -gt 3 ]; then
+          echo "burn errored (exit $rc), see stderr"; exit "$rc"
+        fi
+        node -e '
+          const j = require(process.env.RUNNER_TEMP + "/budget.json");
+          const line = `**burn:** \${j.cost.toFixed(2)} USD over ${j.period} vs ${j.max} max — ${j.over ? "OVER BUDGET" : "under budget"}`;
+          require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, line + "\n");
+        '
+        if [ "$rc" -eq 3 ]; then
+          echo "::error::agent spend over budget for $label (${{ inputs.max }} USD / ${{ inputs.period }})"
+          exit 3
+        fi
+      shell: bash
+
+    # NOTE: composite steps inherit the caller workflow's environment, so point
+    # burn at wherever the transcripts artifact was unpacked, e.g. in the parent
+    # workflow:  env: { BURN_CLAUDE_DIR: ${{ runner.temp }}/transcripts, ... }.

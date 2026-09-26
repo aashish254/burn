@@ -1,0 +1,199 @@
+// SPEC-3-5 §V3.D — render the ULP spec home into docs/ulp/ as a static site.
+// Deterministic, zero-dependency, offline: markdown subset → HTML for ulp/SPEC.md
+// and the conformance README, plus the schema pretty-printed as JSON.
+// Publishing (GitHub Pages etc.) is the repo owner's CI's job; this script
+// only produces files, it never serves or uploads anything.
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = path.join(ROOT, "docs", "ulp");
+
+const esc = (s) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+function inline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+}
+
+// Minimal GFM-subset renderer: ATX headings, paragraphs, fenced code,
+// unordered lists, tables, hr. Exactly the constructs the ULP docs use —
+// anything else is rendered as escaped text, never dropped.
+function mdToHtml(md) {
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+  const slug = new Map();
+  const anchor = (text) => {
+    let s = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const n = (slug.get(s) || 0) + 1;
+    slug.set(s, n);
+    return n > 1 ? `${s}-${n - 1}` : s;
+  };
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^```/.test(l)) {
+      const lang = l.slice(3).trim();
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++; // closing fence
+      out.push(
+        `<pre${lang ? ` class="lang-${esc(lang)}"` : ""}><code>${esc(buf.join("\n"))}</code></pre>`
+      );
+      continue;
+    }
+    const h = /^(#{1,6}) (.*)$/.exec(l);
+    if (h) {
+      const lvl = h[1].length;
+      const text = h[2].trim();
+      out.push(`<h${lvl} id="${anchor(text)}">${inline(text)}</h${lvl}>`);
+      i++;
+      continue;
+    }
+    if (/^(-{3,}|\*{3,})\s*$/.test(l)) {
+      out.push("<hr>");
+      i++;
+      continue;
+    }
+    if (/^\|/.test(l) && /^\|[\s:|-]+\|?\s*$/.test(lines[i + 1] || "")) {
+      const rows = [];
+      while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells = (r) =>
+        r.replace(/^\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
+      const head = cells(rows[0]);
+      const body = rows.slice(2).map(cells);
+      out.push(
+        `<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead>` +
+          `<tbody>${body
+            .map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`)
+            .join("")}</tbody></table>`
+      );
+      continue;
+    }
+    if (/^\s*[-*] /.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*] /.test(lines[i]))
+        items.push(lines[i++].replace(/^\s*[-*] /, ""));
+      out.push(`<ul>${items.map((t) => `<li>${inline(t)}</li>`).join("")}</ul>`);
+      continue;
+    }
+    if (/^> /.test(l) || l === ">") {
+      const buf = [];
+      while (i < lines.length && (/^> /.test(lines[i]) || lines[i] === ">"))
+        buf.push(lines[i++].replace(/^> ?/, ""));
+      out.push(`<blockquote>${buf.map((t) => `<p>${inline(t)}</p>`).join("")}</blockquote>`);
+      continue;
+    }
+    if (l.trim() === "") {
+      i++;
+      continue;
+    }
+    const para = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() !== "" &&
+      !/^(#{1,6} |```|\s*[-*] |\||> |\s*-{3,}\s*$)/.test(lines[i])
+    )
+      para.push(lines[i++]);
+    out.push(`<p>${inline(para.join("\n"))}</p>`);
+  }
+  return out.join("\n");
+}
+
+const PAGE = (title, nav, body) => `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<style>
+:root { color-scheme: light dark; }
+body { max-width: 46rem; margin: 2.5rem auto; padding: 0 1.25rem;
+  font: 16px/1.65 ui-sans-serif, system-ui, sans-serif; }
+nav a { margin-right: 1rem; }
+code { background: rgba(127,127,127,.15); padding: .1em .35em; border-radius: 4px; }
+pre { background: rgba(127,127,127,.12); padding: .9rem 1.1rem; border-radius: 8px;
+  overflow-x: auto; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid rgba(127,127,127,.4); padding: .35rem .6rem; text-align: left; }
+h1, h2, h3 { line-height: 1.25; margin-top: 2rem; }
+hr { border: none; border-top: 1px solid rgba(127,127,127,.35); margin: 2rem 0; }
+a { color: #0b6bcb; } @media (prefers-color-scheme: dark) { a { color: #6db3e8; } }
+footer { margin-top: 3rem; color: #888; font-size: .85rem; }
+</style>
+<nav>${nav.map(([href, t]) => `<a href="${href}">${esc(t)}</a>`).join("")}</nav>
+<main>${body}</main>
+<footer>Generated by <code>scripts/render-docs.mjs</code> — ULP 1.0 static spec home. No scripts, no network.</footer>
+`;
+
+function read(p) {
+  return fs.readFileSync(path.join(ROOT, p), "utf8");
+}
+
+// Relative .md links between the rendered docs resolve to their .html pages;
+// links out of the repo (or into untouched source paths) are left as-is.
+function remapLinks(html, mapping) {
+  return html.replace(/href="([^"]+\.md)"/g, (m, href) =>
+    mapping[href] ? `href="${mapping[href]}"` : m
+  );
+}
+
+export function build() {
+  fs.mkdirSync(OUT, { recursive: true });
+  const nav = [
+    ["index.html", "Home"],
+    ["ulp.html", "Protocol"],
+    ["schema.html", "Schema"],
+    ["conformance.html", "Conformance"],
+  ];
+
+  const ulpHtml = remapLinks(mdToHtml(read("ulp/SPEC.md")), {
+    "conformance/README.md": "conformance.html",
+    "../SPEC.md": "../../SPEC.md", // out of docs/ulp/ back to the burn repo root
+    "../SPEC-2.md": "../../SPEC-2.md",
+    "rfc/README.md": "../../ulp/rfc/README.md",
+    "CHANGELOG.md": "../../ulp/CHANGELOG.md",
+    "reference/ulp-reader.py": "../../ulp/reference/ulp-reader.py",
+  });
+  const confHtml = remapLinks(mdToHtml(read("ulp/conformance/README.md")), {
+    "../SPEC.md": "ulp.html",
+    "../schema-1.0.json": "schema.html",
+  });
+
+  const schemaText = read("ulp/schema-1.0.json");
+  JSON.parse(schemaText); // fail loudly if the schema isn't valid JSON
+  const schemaHtml =
+    "<h1>ULP 1.0 bundle schema</h1><p>JSON Schema draft 2020-12 subset (the vocabulary burn and " +
+    "<code>ulp-reader.py</code> both implement): <code>$ref</code>, <code>type</code>, " +
+    "<code>required</code>, <code>enum</code>, <code>const</code>, <code>pattern</code>, " +
+    "<code>minimum</code>, <code>properties</code>, <code>patternProperties</code>, " +
+    "<code>additionalProperties</code>, <code>items</code>, <code>anyOf</code>.</p>" +
+    `<pre class="lang-json"><code>${esc(schemaText)}</code></pre>`;
+
+  const indexHtml =
+    "<h1>Usage Ledger Protocol (ULP) 1.0</h1>" +
+    "<p>ULP is the wire format burn exports and ingests: a privacy-safe bundle of " +
+    "usage events plus report buckets, mergeable across machines with zero trust " +
+    "between them.</p><ul>" +
+    '<li><a href="ulp.html">Protocol specification</a> — <code>ulp/SPEC.md</code>, event model, provenance rules R1–R3, merge semantics, privacy P1–P4, version negotiation.</li>' +
+    '<li><a href="schema.html">Normative schema</a> — <code>ulp/schema-1.0.json</code>.</li>' +
+    '<li><a href="conformance.html">Conformance kit</a> — pure-JSON vectors, runner contract, and the two reference runners (Node + stdlib Python).</li>' +
+    "</ul>" +
+    "<p>Everything here is generated from the repository sources by " +
+    "<code>scripts/render-docs.mjs</code>; regenerate after editing any of them.</p>";
+
+  fs.writeFileSync(path.join(OUT, "index.html"), PAGE("ULP 1.0 — Usage Ledger Protocol", nav, indexHtml));
+  fs.writeFileSync(path.join(OUT, "ulp.html"), PAGE("ULP 1.0 — Protocol", nav, ulpHtml));
+  fs.writeFileSync(path.join(OUT, "schema.html"), PAGE("ULP 1.0 — Schema", nav, schemaHtml));
+  fs.writeFileSync(path.join(OUT, "conformance.html"), PAGE("ULP 1.0 — Conformance", nav, confHtml));
+  return ["index.html", "ulp.html", "schema.html", "conformance.html"].map((f) => path.join(OUT, f));
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  for (const f of build()) console.log("wrote", path.relative(ROOT, f));
+}

@@ -1,0 +1,24 @@
+# Example: gate a PR on agent spend. Copy into your repo's
+# .github/workflows/ and upload your transcripts first (or run the agent
+# inside CI). burn itself never touches the network.
+name: pr-budget
+on:
+  pull_request:
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # OPTIONAL: bring last month's local transcripts into CI so burn has
+      # something to measure (skip if the agent runs inside the workflow).
+      # - uses: actions/download-artifact@v4
+      #   with: { name: claude-transcripts, path: ${{ runner.temp }}/transcripts }
+      # env:
+      #   BURN_CLAUDE_DIR: ${{ runner.temp }}/transcripts
+
+      - uses: aashish254/burn/examples/burn-budget-badge@main
+        with:
+          max: 25
+          period: month

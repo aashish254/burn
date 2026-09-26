@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ULP 1.0 — Conformance</title>
+<style>
+:root { color-scheme: light dark; }
+body { max-width: 46rem; margin: 2.5rem auto; padding: 0 1.25rem;
+  font: 16px/1.65 ui-sans-serif, system-ui, sans-serif; }
+nav a { margin-right: 1rem; }
+code { background: rgba(127,127,127,.15); padding: .1em .35em; border-radius: 4px; }
+pre { background: rgba(127,127,127,.12); padding: .9rem 1.1rem; border-radius: 8px;
+  overflow-x: auto; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid rgba(127,127,127,.4); padding: .35rem .6rem; text-align: left; }
+h1, h2, h3 { line-height: 1.25; margin-top: 2rem; }
+hr { border: none; border-top: 1px solid rgba(127,127,127,.35); margin: 2rem 0; }
+a { color: #0b6bcb; } @media (prefers-color-scheme: dark) { a { color: #6db3e8; } }
+footer { margin-top: 3rem; color: #888; font-size: .85rem; }
+</style>
+<nav><a href="index.html">Home</a><a href="ulp.html">Protocol</a><a href="schema.html">Schema</a><a href="conformance.html">Conformance</a></nav>
+<main><h1 id="ulp-1-0-conformance-kit">ULP 1.0 conformance kit</h1>
+<p>Pure-JSON test vectors. Any implementation — in any language — can pass this
+kit by reading <strong>only</strong> <code>SPEC.md</code>, <code>schema-1.0.json</code>, and this file. No
+Node, no Python, no burn-specific code is required to write a runner.</p>
+<p>Two runners already exist and MUST stay green in CI:</p>
+<table><thead><tr><th>Runner</th><th>Command</th></tr></thead><tbody><tr><td>burn (reference implementation #1)</td><td><code>node src/cli.js conformance</code></td></tr><tr><td>stdlib Python reader (#2)</td><td><code>python3 ulp/reference/ulp-reader.py conform</code></td></tr></tbody></table>
+<p>Both exit <code>0</code> when every vector passes and <code>2</code> on any failure.</p>
+<h2 id="vector-format">Vector format</h2>
+<p>Each <code>vectors/*.json</code> file is one vector:</p>
+<pre class="lang-json"><code>{
+  "id": "K06",
+  "name": "human-readable claim being proven",
+  "kind": "validate | validate-both | merge",
+  "bundle":  { ... },          // kind=validate / validate-both
+  "bundles": [ {...}, ... ],   // kind=merge
+  "expectSameReversed": true,  // optional, kind=merge only
+  "expect": { ... }            // per-kind expectations, below
+}</code></pre>
+<p>The vectors directory may be overridden with the <code>ULP_VECTORS_DIR</code> env var so
+implementations can also run private vectors through the same tooling.</p>
+<h3 id="kind-validate">kind: <code>validate</code></h3>
+<p><code>expect.ok</code> is a boolean: does <code>bundle</code> validate against
+<code>ulp/schema-1.0.json</code> in <strong>strict</strong> mode (unknown non-<code>x-*</code> fields are
+errors) — matching ULP's current-minor behavior.</p>
+<h3 id="kind-validate-both">kind: <code>validate-both</code></h3>
+<p><code>expect.strictOk</code> and <code>expect.relaxOk</code>: the same bundle validated strictly and
+then with the newer-minor relaxation (unknown non-<code>x-*</code> fields ignored). A
+conformant reader answers the version question before the field question —
+see SPEC.md §Negotiation.</p>
+<h3 id="kind-merge">kind: <code>merge</code></h3>
+<p>Merge <code>bundles</code> per ULP §Merge semantics — identity
+<code>(deviceId, agent, sessionId, index-within-session)</code>, set-union, totals
+<strong>recomputed from the merged event set</strong> (never summed from pre-aggregated
+rows) — then compare against <code>expect.totals</code>:</p>
+<pre class="lang-json"><code>"expect": {
+  "totals": {
+    "events": 3, "cost": 20.25, "cacheHit": 0.7272727272727273,
+    "sources": { "store": 1, "estimate": 1, "unpriced": 1 },
+    "repos": { "shared-repo": 9.0, "a-only": 11.25 }
+  }
+}</code></pre>
+<p>Comparison tolerances: exact for counts; absolute difference <code>&lt; 1e-9</code> for
+<code>cost</code>, <code>cacheHit</code>, and each per-repo cost. <code>repos</code> must match in both the
+listed costs <strong>and</strong> the total number of repo buckets (an extra or missing
+bucket is a failure even if every listed number matches). <code>sources</code> counts
+events by provenance class (<code>store</code> / <code>estimate</code> / <code>unpriced</code>).</p>
+<p>If <code>expectSameReversed</code> is true, the merge MUST produce identical totals when
+<code>bundles</code> is given in reverse order — agreement is order-free, not
+order-tolerant.</p>
+<h2 id="what-the-kit-currently-proves">What the kit currently proves</h2>
+<ul><li><code>K01</code> a minimal bundle is accepted; the schema is satisfiable.</li><li><code>K02</code> unknown non-<code>x-*</code> fields fail at the current minor and are ignored</li></ul>
+<p>  only under the newer-minor relaxation.</p>
+<ul><li><code>K03</code> <code>x-&lt;impl&gt;-*</code> extension fields are legal without registration.</li><li><code>K04</code> absolute paths (<code>dir</code>, non-<code>~/</code> store paths) are rejected — privacy P3.</li><li><code>K05</code> a stored cost of <code>0</code> stays provenance <code>store</code> (billed zero ≠ unpriced).</li><li><code>K06</code> merge unions devices, recomputes buckets from events (not sum-of-sums),</li></ul>
+<p>  and is order-free.</p>
+<ul><li><code>K07</code> <code>merge(A, A) == A</code> — union identity; re-ingesting cannot double-count.</li><li><code>K08</code> unpriced tokens still count; dollars are withheld (provenance rule R3).</li></ul>
+<h2 id="writing-a-new-vector">Writing a new vector</h2>
+<p>1. Add <code>vectors/KNN-short-name.json</code> following the format above.
+2. Keep it a *claim about the protocol*, not about burn's UX.
+3. Run both runners; they must agree. If they disagree, the protocol — not
+   the implementation — is under-specified; fix SPEC.md first.</p></main>
+<footer>Generated by <code>scripts/render-docs.mjs</code> — ULP 1.0 static spec home. No scripts, no network.</footer>

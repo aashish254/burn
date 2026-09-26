@@ -1,0 +1,32 @@
+{
+  "name": "burn-usage",
+  "version": "0.1.0",
+  "description": "Where did your AI budget actually go? A zero-dependency local ledger across your coding agents.",
+  "type": "module",
+  "bin": {
+    "burn": "src/cli.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "test": "node --disable-warning=ExperimentalWarning --test",
+    "burn": "node src/cli.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "cost",
+    "usage",
+    "claude-code",
+    "opencode",
+    "tokens",
+    "observability",
+    "local-first"
+  ],
+  "license": "MIT"
+}

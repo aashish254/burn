@@ -1,0 +1,95 @@
+{
+  "id": "K08",
+  "name": "unpriced tokens count, dollars withheld (R3)",
+  "kind": "merge",
+  "bundles": [
+    {
+      "ulpVersion": "1.0",
+      "generatedAt": "2026-09-20T12:00:00.000Z",
+      "deviceId": "device-k08",
+      "hostnameHash": "01234567",
+      "totals": {
+        "key": "total",
+        "events": 2,
+        "cost": 0,
+        "store": 0,
+        "estimate": 0,
+        "unpricedEvents": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "cacheWrite": 0,
+          "cacheRead": 0,
+          "reasoning": 0
+        },
+        "cacheHit": 0
+      },
+      "cacheHit": 0,
+      "totalTokens": 0,
+      "sources": {
+        "store": 0,
+        "estimate": 0,
+        "unpriced": 0
+      },
+      "repos": [],
+      "models": [],
+      "agents": [],
+      "days": [],
+      "sessions": [],
+      "events": [
+        {
+          "agent": "aider",
+          "sessionId": "s1",
+          "model": "mystery-llm-v9",
+          "repo": "demo",
+          "date": "2026-09-01",
+          "tokens": {
+            "input": 5000,
+            "output": 100,
+            "cacheWrite": 0,
+            "cacheRead": 0,
+            "reasoning": 0
+          },
+          "storedCost": null,
+          "cost": 0,
+          "costSource": "unpriced",
+          "gitBranch": null,
+          "attribution": null
+        },
+        {
+          "agent": "aider",
+          "sessionId": "s1",
+          "model": "claude-haiku-4-5",
+          "repo": "demo",
+          "date": "2026-09-01",
+          "tokens": {
+            "input": 1000,
+            "output": 0,
+            "cacheWrite": 0,
+            "cacheRead": 0,
+            "reasoning": 0
+          },
+          "storedCost": null,
+          "cost": 0.0008,
+          "costSource": "estimate",
+          "gitBranch": null,
+          "attribution": null
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "totals": {
+      "events": 2,
+      "cost": 0.0008,
+      "sources": {
+        "store": 0,
+        "estimate": 1,
+        "unpriced": 1
+      },
+      "repos": {
+        "demo": 0.0008
+      }
+    }
+  }
+}

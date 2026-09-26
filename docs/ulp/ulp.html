@@ -1,0 +1,219 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ULP 1.0 — Protocol</title>
+<style>
+:root { color-scheme: light dark; }
+body { max-width: 46rem; margin: 2.5rem auto; padding: 0 1.25rem;
+  font: 16px/1.65 ui-sans-serif, system-ui, sans-serif; }
+nav a { margin-right: 1rem; }
+code { background: rgba(127,127,127,.15); padding: .1em .35em; border-radius: 4px; }
+pre { background: rgba(127,127,127,.12); padding: .9rem 1.1rem; border-radius: 8px;
+  overflow-x: auto; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid rgba(127,127,127,.4); padding: .35rem .6rem; text-align: left; }
+h1, h2, h3 { line-height: 1.25; margin-top: 2rem; }
+hr { border: none; border-top: 1px solid rgba(127,127,127,.35); margin: 2rem 0; }
+a { color: #0b6bcb; } @media (prefers-color-scheme: dark) { a { color: #6db3e8; } }
+footer { margin-top: 3rem; color: #888; font-size: .85rem; }
+</style>
+<nav><a href="index.html">Home</a><a href="ulp.html">Protocol</a><a href="schema.html">Schema</a><a href="conformance.html">Conformance</a></nav>
+<main><h1 id="usage-ledger-protocol-ulp-version-1-0-draft">Usage Ledger Protocol (ULP) — version 1.0 (draft)</h1>
+<blockquote><p>Extracted from burn's <a href="../../SPEC.md">SPEC.md</a> (v1.0, the binding base) and</p><p><a href="../../SPEC-2.md">SPEC-2.md</a> §B/§E/§F, now living in its own home: normative</p><p>schema in <a href="schema-1.0.json">schema-1.0.json</a>, the conformance kit in</p><p><a href="conformance.html">conformance/README.md</a>, governance in</p><p><a href="../../ulp/rfc/README.md">rfc/README.md</a>, and decisions in <a href="../../ulp/CHANGELOG.md">CHANGELOG.md</a>.</p><p></p><p>Status: the 1.0 gate — "a second, independent implementation passes the</p><p>conformance vectors" — is met: <code>burn</code> is reference implementation #1 and</p><p><a href="reference/ulp-reader.py">reference/ulp-reader.py</a> is #2. Schema evolution</p><p>stays additive-only under the §10 versioning rules; anything else is an RFC.</p></blockquote>
+<p>Key words MUST, MUST NOT, SHOULD, MAY are used as described in RFC 2119.</p>
+<hr>
+<h2 id="1-scope-and-philosophy">1. Scope and philosophy</h2>
+<p>A <strong>usage ledger</strong> is a JSON document that answers, from local transcript data:
+how many tokens and how many dollars an AI coding agent consumed, grouped by
+repository, model, agent, day, session, and unit of work.</p>
+<p>Three inviolable principles, inherited from the base spec:</p>
+<p>1. <strong>Provenance over authority.</strong> Every dollar carries a class — *billed* (the
+   source agent recorded it), *estimated* (arithmetic over a user-owned pricing
+   table), or *unpriced* (tokens counted, dollars withheld). A ledger consumer
+   MUST always be able to tell recorded truth from arithmetic from nothing.
+2. <strong>Never invent.</strong> A conformant producer MUST NOT emit a dollar figure it
+   cannot trace to R1 or R2 (§3). An unknown price yields tokens, not a guess.
+3. <strong>Privacy by shape.</strong> Ledgers carry counters, labels, and hashes — never
+   absolute paths, home directories, hostnames, or session content (§7).</p>
+<p>The protocol governs the <strong>document and its semantics only</strong>. How a producer
+obtains events (transcript parsing, SQLite reads) is out of scope; §5 defines
+what a source agent's data must be able to map onto.</p>
+<hr>
+<h2 id="2-usageevent-the-atomic-record">2. UsageEvent — the atomic record</h2>
+<pre><code>UsageEvent {
+  agent       string        source id, kebab-case ("claude-code", "codex", …)
+  sessionId   string        source-native session identifier
+  model       string        model id as the source reported it; "unknown" if absent
+  repo        string        display label = basename of the working directory,
+                            trailing slashes removed; collisions acceptable —
+                            it groups, it does not identify (§6 privacy)
+  date        string        "YYYY-MM-DD" in UTC, or "unknown"
+  tokens {
+    input       integer ≥ 0   fresh (uncached) prompt tokens
+    output      integer ≥ 0   generated tokens
+    cacheWrite  integer ≥ 0   tokens written INTO prompt cache
+    cacheRead   integer ≥ 0   tokens served FROM prompt cache
+    reasoning   integer ≥ 0   subset of output that was reasoning/thinking;
+                              MAY be 0 when the source does not split it
+  }
+  storedCost  number|null   USD billed as recorded BY THE SOURCE AGENT itself;
+                            null when the source records no dollars
+  cost        number        resolved USD for this event (§3); unpriced ⇒ 0
+  costSource  "store" | "estimate" | "unpriced"
+  gitBranch   string|null   branch when the source recorded it
+}</code></pre>
+<p>Rules:</p>
+<ul><li>One event = one billable interaction as recorded by the source (a model turn,</li></ul>
+<p>  or an agent-billed aggregate session when only totals exist).</p>
+<ul><li>Tokens the source bills at *full* prompt count including cached tokens MUST be</li></ul>
+<p>  normalized so <code>input</code> is fresh-only — double-billing breaks every downstream
+  price math.</p>
+<ul><li>Events the source marks non-billable MUST be skipped.</li><li>Session identity is the tuple <code>agent:sessionId</code>; <code>repo</code> is display-only.</li></ul>
+<h2 id="3-cost-provenance">3. Cost provenance</h2>
+<p>Evaluated in order, first match wins:</p>
+<table><thead><tr><th>#</th><th>condition</th><th>class</th><th>key</th></tr></thead><tbody><tr><td>R1</td><td><code>storedCost</code> is a finite number (including 0)</td><td>billed</td><td><code>store</code></td></tr><tr><td>R2</td><td><code>model</code> resolves a price in the producer's pricing table</td><td>estimated</td><td><code>estimate</code></td></tr><tr><td>R3</td><td>otherwise</td><td>unpriced</td><td><code>unpriced</code></td></tr></tbody></table>
+<ul><li><code>storedCost === 0</code> is <strong>billed zero</strong> (a genuine free tier), not missing data.</li><li>Estimated cost, prices in USD per 1,000,000 tokens:</li></ul>
+<p>  ``<code>
+  cost = (input·p.input + output·p.output + cacheWrite·p.cacheWrite + cacheRead·p.cacheRead) / 1e6
+  </code>``</p>
+<p>  with <code>p.cacheWrite</code> and <code>p.cacheRead</code> defaulting to <code>p.input</code> when unspecified.</p>
+<ul><li>Model resolution is deterministic: exact key, else the longest table key whose</li></ul>
+<p>  remainder is empty or a version suffix (<code>-20260901</code> / <code>.2</code>). Variant names
+  (<code>gpt-5-micro</code>) MUST NOT inherit a family price; unpriced is always the
+  fallback, never a guess.</p>
+<ul><li>Pricing tables are producer-owned; the protocol takes no position on price</li></ul>
+<p>  truth, only on provenance labeling.</p>
+<h2 id="4-derived-metrics">4. Derived metrics</h2>
+<p>For any bucket (totals, repo, model, agent, day, session, work unit):</p>
+<pre><code>promptTokens = input + cacheWrite + cacheRead
+cacheHit     = promptTokens &gt; 0 ? cacheRead / promptTokens : 0
+shownTokens  = input + output                       (cache excluded by design)
+cost         = Σ resolved costs of billed + estimated events
+store        = Σ billed costs
+estimate     = Σ estimated costs</code></pre>
+<p><code>cacheHit</code> is the protocol's answer to "what did prompt caching do for me."</p>
+<hr>
+<h2 id="5-ledger-document">5. Ledger document</h2>
+<p><code>specVersion: "2.0"</code> shape (1.x consumers remain valid: all v2 fields are additive):</p>
+<pre><code>LedgerDocument {
+  specVersion    "1.0" | "2.0"
+  generatedAt    ISO-8601 UTC
+  totals         Bucket            (key "total", all events)
+  cacheHit       number            (= totals.cacheHit, top-level convenience)
+  totalTokens    integer           (totals.input + totals.output)
+  sources        { store: int, estimate: int, unpriced: int }   // event COUNTS per class
+  repos          Bucket[]  sorted cost DESC
+  models         Bucket[]  sorted cost DESC
+  agents         Bucket[]  sorted cost DESC
+  days           Bucket[]  sorted key ASC ("unknown" last)
+  sessions       Session[] sorted cost DESC
+
+  // v2, additive:
+  supportedAgents? [ { id, storePath?, status: "ready"|"planned" } ]
+  workUnits?       Bucket[] + { unit: { kind, name, confidence }, unattributed: boolean }
+  events?          UsageEvent[] + { attribution: { kind, ref, confidence } | null }
+  deviceIds?       string[]        // present on merged ledgers
+}
+
+Bucket {
+  key string, events int, cost number, store number, estimate number,
+  unpricedEvents int,
+  tokens { input, output, cacheWrite, cacheRead, reasoning },
+  cacheHit number
+}
+
+Session {
+  agent, sessionId, model, repo, date,          // model/repo/date from FIRST event
+  cost number, tokens { …as Bucket… },
+  source "store"|"estimate"|"unpriced"          // first event's class
+}</code></pre>
+<p>Normative:</p>
+<ul><li><code>cost</code> fields are ALWAYS numbers, never null; unpriced events contribute 0</li></ul>
+<p>  and surface via <code>unpricedEvents</code> / <code>sources.unpriced</code>.</p>
+<ul><li>A consumer MUST ignore unknown fields.</li><li>Work attribution MUST reconcile: <code>Σ workUnits.cost === totals.cost</code>, with a</li></ul>
+<p>  visible <code>unattributed</code> bucket for the residue — never silently dropped.</p>
+<ul><li>Attribution confidence ladder: <code>explicit</code> (user assertion) &gt; <code>native</code> (source</li></ul>
+<p>  recorded the branch) &gt; <code>joined</code> (timestamp↔git mapping) &gt; <code>guess</code> (repo-only)
+  &gt; <code>unattributed</code>.</p>
+<ul><li><code>supportedAgents[].status === "ready"</code> asserts the producer actually parses</li></ul>
+<p>  that source's on-disk format; claiming "ready" for an unverified format is a
+  conformance failure.</p>
+<h2 id="6-bundle-document-and-merge-semantics">6. Bundle document and merge semantics</h2>
+<p>A <strong>bundle</strong> is a LedgerDocument plus producer identity, written for exchange:</p>
+<pre><code>Bundle = LedgerDocument {
+  + deviceId      string   producer identity — a random uuid persisted by the
+                           producer, never derived from a name or email
+  + hostnameHash  string   SHA-256(hostname) truncated to 8 hex — display only
+  + pricingHash   string|null  SHA-256 over the producer's EFFECTIVE pricing
+                           table, canonicalized, truncated to 12 hex — makes
+                           an estimate reproducible years later. MUST be null
+                           (a stable marker, never "a hash of nothing") when
+                           no pricing table priced any event in the ledger.
+  + events[]      required for merge-capable bundles; each event's `dir` is
+                   STRIPPED and `unit` is replaced by `attribution`
+}</code></pre>
+<p>A <strong>report-only</strong> bundle (<code>--compact</code> in the reference implementation) MAY omit
+<code>events[]</code>; such bundles MUST NOT be accepted as merge inputs.</p>
+<p><code>merge(bundles…) → LedgerDocument</code> is normative, order-independent:</p>
+<p>1. <strong>Event identity</strong> = <code>(deviceId, agent, sessionId, index-within-session)</code>.
+   The merged event set is the <strong>union</strong> of these identities. Conflicts cannot
+   exist by construction; merging identical bundles is idempotent.
+2. <strong>Recompute, never sum.</strong> All buckets (§4) are recomputed from the merged
+   event set. Two machines' <code>repos[0]</code> rows are not one row; elementwise
+   addition of pre-aggregated buckets is a conformance failure.
+3. <strong>Recorded cost travels with the event.</strong> Merged events keep their recorded
+   <code>cost</code>/<code>costSource</code>; a merge MUST NOT re-price another machine's events
+   against this machine's pricing table (that would silently mutate history).
+4. <strong>Attribution re-resolves locally.</strong> Bundled <code>attribution</code> is discarded on
+   merge; work units re-resolve against the consuming machine's own explicit
+   attributes, per §5's ladder.
+5. <strong>Duplicate deviceIds</strong> (a copied identity file) make one human's
+   identical-index events shadow another's; a conformant tool MUST offer an
+   audit mode that detects and reports them.
+6. Merged output lists every contributing <code>deviceId</code> (sorted).</p>
+<p>Distribution is out of scope by design: committing bundles to a repository
+(<code>team/usage/*.burn.json</code>) or any file share is sufficient. <strong>Git is the sync
+protocol; there is no server, and a conformant core MUST NOT require network
+I/O.</strong></p>
+<h2 id="7-privacy-requirements">7. Privacy requirements</h2>
+<ul><li>P1. No network I/O in a conformant core. Optional fetches (price snapshots)</li></ul>
+<p>  are explicit opt-in side commands.</p>
+<ul><li>P2. Source agent data is read read-only; a ledger tool MUST NOT write to or</li></ul>
+<p>  mutate transcripts/databases it reads.</p>
+<ul><li>P3. Absolute paths, home directories, hostnames, and session content MUST NOT</li></ul>
+<p>  appear in ledgers, bundles, or rendered output. <code>repo</code> is basename-only;
+  <code>hostnameHash</code> is the only machine-derived string allowed in bundles.</p>
+<ul><li>P4. Estimated dollars MUST remain labeled as estimates in every rendering and</li></ul>
+<p>  in JSON (<code>sources</code>, per-bucket <code>estimate</code>).</p>
+<h2 id="8-exit-code-and-gate-contract">8. Exit-code and gate contract</h2>
+<p>Tooling that reports a ledger (rather than only emitting documents) SHOULD use:</p>
+<table><thead><tr><th>code</th><th>meaning</th></tr></thead><tbody><tr><td>0</td><td>report produced (or gate passed)</td></tr><tr><td>1</td><td>no supported data found — stdout empty, human hint on stderr</td></tr><tr><td>2</td><td>error (tool or input problem)</td></tr><tr><td>3</td><td>policy failure (e.g. budget exceeded) — distinct from a crash on purpose</td></tr></tbody></table>
+<p>The protocol measures; enforcement lives in the consumer of exit 3.</p>
+<h2 id="9-conformance-vectors-protocol-seed">9. Conformance vectors (protocol seed)</h2>
+<p>A second implementation is conformant when it passes at least:</p>
+<p>1. Provenance: <code>storedCost = 0</code> → <code>store</code> with cost 0, NOT unpriced; unknown
+   model → tokens counted, cost 0, <code>sources.unpriced + 1</code>.
+2. Estimated dollars match the §3 formula to 1e-9; cacheWrite/cacheRead
+   defaults to input price when unspecified.
+3. <code>cacheHit</code> per §4 including the zero-prompt case.
+4. Document on an empty machine: exit 1, empty stdout.
+5. Bucket sorting and <code>days</code> ordering (key ASC, "unknown" last) as §5.
+6. Merge: union, idempotence (merge(A,A) ≡ A), order-independence, and
+   recompute-not-sum (merged buckets ≠ elementwise sums when devices share
+   repos).
+7. Reconciliation: <code>Σ workUnits.cost === totals.cost</code> incl. <code>unattributed</code>.
+8. Privacy: a full-path string appearing anywhere in bundle output fails.
+9. Identity: deviceId is opaque (uuid-shaped or otherwise non-personal);
+   hostname never appears raw.</p>
+<p>The <code>burn</code> test-suite (<code>test/burn.test.js</code>, 39 vectors) is the current
+reference implementation of these tests and doubles as ULP's executable
+conformance suite.</p>
+<h2 id="10-versioning">10. Versioning</h2>
+<ul><li>Field additions bump the minor; renames, removals, or semantic changes bump</li></ul>
+<p>  the major.</p>
+<ul><li>Producers echo <code>specVersion</code>; consumers reject nothing newer than they</li></ul>
+<p>  understand except major mismatch (warn, ignore unknown fields).</p>
+<ul><li>1.0-gate: a second independent implementation passing §9, and a named</li></ul>
+<p>  trademark-free home for this document.</p></main>
+<footer>Generated by <code>scripts/render-docs.mjs</code> — ULP 1.0 static spec home. No scripts, no network.</footer>

@@ -1,0 +1,37 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --version
+      # zero dependencies: no install step needed
+      # (npm test = node --disable-warning=ExperimentalWarning --test, so the
+      # SQLite-experimental notice never becomes a CI warning)
+      - run: npm test
+      - name: ULP conformance kit (Node runner)
+        run: node src/cli.js conformance
+      - name: ULP conformance kit (Python reference reader)
+        run: python3 ulp/reference/ulp-reader.py conform
+      - name: docs/ulp static site is current
+        run: |
+          node scripts/render-docs.mjs
+          git diff --exit-code docs/ulp
+      - name: smoke run on empty machine
+        run: |
+          node src/cli.js --version
+          node src/cli.js --json || status=$?
+          # exit 1 is the friendly "no agent data found" path — must not crash
+          if [ "${status:-0}" -gt 1 ]; then exit 1; fi

@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aashish254/ulp/schema-1.0.json",
+  "title": "ULP 1.0 — Usage Ledger bundle",
+  "description": "Normative core shape of a Usage Ledger Protocol document (see SPEC.md). Extensions are legal ONLY under x-<impl>-* names; consumers MUST ignore unknown fields they do not implement.",
+  "type": "object",
+  "required": ["ulpVersion", "generatedAt", "totals", "cacheHit", "totalTokens", "sources", "repos", "models", "agents", "days", "sessions"],
+  "additionalProperties": false,
+  "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+  "properties": {
+    "ulpVersion": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+    "specVersion": { "type": "string" },
+    "generatedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}" },
+    "deviceId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,64}$" },
+    "hostnameHash": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+    "pricingHash": { "type": ["string", "null"], "pattern": "^[0-9a-f]{12}$" },
+    "deviceIds": { "type": "array", "items": { "type": "string" } },
+    "supportedAgents": { "type": "array", "items": { "$ref": "#/$defs/supportedAgent" } },
+    "totals": { "$ref": "#/$defs/bucket" },
+    "cacheHit": { "type": "number", "minimum": 0 },
+    "totalTokens": { "type": "integer", "minimum": 0 },
+    "sources": { "$ref": "#/$defs/sources" },
+    "repos": { "type": "array", "items": { "$ref": "#/$defs/bucket" } },
+    "models": { "type": "array", "items": { "$ref": "#/$defs/bucket" } },
+    "agents": { "type": "array", "items": { "$ref": "#/$defs/bucket" } },
+    "days": { "type": "array", "items": { "$ref": "#/$defs/bucket" } },
+    "workUnits": { "type": "array", "items": { "$ref": "#/$defs/bucket" } },
+    "sessions": { "type": "array", "items": { "$ref": "#/$defs/session" } },
+    "events": { "type": "array", "items": { "$ref": "#/$defs/event" } }
+  },
+  "$defs": {
+    "dateStr": { "type": ["string", "null"], "pattern": "^(unknown|[0-9]{4}-[0-9]{2}-[0-9]{2})$" },
+    "tokens": {
+      "type": "object",
+      "required": ["input", "output", "cacheWrite", "cacheRead", "reasoning"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "input": { "type": "integer", "minimum": 0 },
+        "output": { "type": "integer", "minimum": 0 },
+        "cacheWrite": { "type": "integer", "minimum": 0 },
+        "cacheRead": { "type": "integer", "minimum": 0 },
+        "reasoning": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "confidence": { "enum": ["explicit", "native", "joined", "guess", "unattributed"] },
+    "attribution": {
+      "type": "object",
+      "required": ["kind", "ref", "confidence"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "kind": { "enum": ["unit", "branch", "repo", "commit-range", "pr", "unattributed"] },
+        "ref": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "required": ["store", "estimate", "unpriced"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "store": { "type": "integer", "minimum": 0 },
+        "estimate": { "type": "integer", "minimum": 0 },
+        "unpriced": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "bucket": {
+      "type": "object",
+      "required": ["key", "events", "cost", "store", "estimate", "unpricedEvents", "tokens", "cacheHit"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "key": { "type": "string" },
+        "events": { "type": "integer", "minimum": 0 },
+        "cost": { "type": "number" },
+        "store": { "type": "number" },
+        "estimate": { "type": "number" },
+        "unpricedEvents": { "type": "integer", "minimum": 0 },
+        "firstDate": { "$ref": "#/$defs/dateStr" },
+        "lastDate": { "$ref": "#/$defs/dateStr" },
+        "tokens": { "$ref": "#/$defs/tokens" },
+        "cacheHit": { "type": "number", "minimum": 0 },
+        "unit": { "$ref": "#/$defs/attribution" }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["agent", "sessionId", "model", "repo", "date", "cost", "tokens", "source"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "agent": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "model": { "type": "string" },
+        "repo": { "type": "string" },
+        "date": { "$ref": "#/$defs/dateStr" },
+        "cost": { "type": "number" },
+        "tokens": { "$ref": "#/$defs/tokens" },
+        "source": { "enum": ["store", "estimate", "unpriced"] }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["agent", "sessionId", "model", "repo", "date", "tokens", "storedCost", "cost", "costSource"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "agent": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "model": { "type": "string" },
+        "repo": { "type": "string" },
+        "date": { "$ref": "#/$defs/dateStr" },
+        "ts": { "type": ["number", "null"] },
+        "tokens": { "$ref": "#/$defs/tokens" },
+        "storedCost": { "type": ["number", "null"] },
+        "cost": { "type": ["number", "null"] },
+        "costSource": { "enum": ["store", "estimate", "unpriced"] },
+        "gitBranch": { "type": ["string", "null"] },
+        "attribution": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/attribution" }] }
+      }
+    },
+    "supportedAgent": {
+      "type": "object",
+      "required": ["id", "status"],
+      "additionalProperties": false,
+      "patternProperties": { "^x-[a-z0-9]+(-[a-z0-9]+)*$": true },
+      "properties": {
+        "id": { "type": "string" },
+        "storePath": { "type": "string", "pattern": "^(~|\\$[A-Z_]+)/" },
+        "status": { "enum": ["ready", "planned"] }
+      }
+    }
+  }
+}

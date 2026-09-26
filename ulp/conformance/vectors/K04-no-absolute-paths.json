@@ -1,0 +1,64 @@
+{
+  "id": "K04",
+  "name": "absolute paths (dir) rejected — privacy P3",
+  "kind": "validate",
+  "bundle": {
+    "ulpVersion": "1.0",
+    "generatedAt": "2026-09-20T12:00:00.000Z",
+    "deviceId": "device-k04",
+    "hostnameHash": "01234567",
+    "totals": {
+      "key": "total",
+      "events": 1,
+      "cost": 0,
+      "store": 0,
+      "estimate": 0,
+      "unpricedEvents": 0,
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "cacheWrite": 0,
+        "cacheRead": 0,
+        "reasoning": 0
+      },
+      "cacheHit": 0
+    },
+    "cacheHit": 0,
+    "totalTokens": 0,
+    "sources": {
+      "store": 0,
+      "estimate": 0,
+      "unpriced": 0
+    },
+    "repos": [],
+    "models": [],
+    "agents": [],
+    "days": [],
+    "sessions": [],
+    "events": [
+      {
+        "agent": "aider",
+        "sessionId": "s1",
+        "model": "gpt-5",
+        "repo": "demo",
+        "date": "2026-09-01",
+        "tokens": {
+          "input": 1,
+          "output": 0,
+          "cacheWrite": 0,
+          "cacheRead": 0,
+          "reasoning": 0
+        },
+        "storedCost": null,
+        "cost": 0,
+        "costSource": "estimate",
+        "gitBranch": null,
+        "attribution": null,
+        "dir": "/home/someone/projects/demo"
+      }
+    ]
+  },
+  "expect": {
+    "ok": false
+  }
+}

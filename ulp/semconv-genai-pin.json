@@ -1,0 +1,20 @@
+{
+  "pinnedFrom": "https://github.com/open-telemetry/semantic-conventions-genai",
+  "file": "docs/registry/attributes/gen-ai.md",
+  "commit": "e57c543b4889",
+  "pinnedAt": "2026-09-26",
+  "upstreamGenerated": "2026-09-24",
+  "note": "Fixture for vector 29: ulp/otel-mapping.md may only use gen_ai.* names listed here. Update by re-fetching the registry and bumping commit+pinnedAt in the same commit as any mapping change. Offline by design: CI compares the mapping against THIS file, never the network.",
+  "attributes": [
+    { "id": "gen_ai.conversation.id", "type": "string", "stability": "development", "description": "The unique identifier for a conversation (session, thread), used to store and correlate messages within this conversation." },
+    { "id": "gen_ai.operation.name", "type": "string", "stability": "development", "description": "The name of the operation being performed.", "examples": ["chat", "generate_content", "text_completion"] },
+    { "id": "gen_ai.provider.name", "type": "string", "stability": "development", "description": "The Generative AI provider as identified by the client or server instrumentation.", "usedByMapping": false, "mappingNote": "burn records the agent, not the provider; deliberately NOT emitted (see otel-mapping.md)." },
+    { "id": "gen_ai.request.model", "type": "string", "stability": "development", "description": "The name of the GenAI model a request is being made to." },
+    { "id": "gen_ai.response.model", "type": "string", "stability": "development", "description": "The name of the model that generated the response.", "usedByMapping": false, "mappingNote": "ULP records one model per event; request.model carries it." },
+    { "id": "gen_ai.usage.input_tokens", "type": "int", "stability": "development", "description": "The number of tokens used in the GenAI input (prompt)." },
+    { "id": "gen_ai.usage.output_tokens", "type": "int", "stability": "development", "description": "The number of tokens used in the GenAI response (completion)." },
+    { "id": "gen_ai.usage.cache_read.input_tokens", "type": "int", "stability": "development", "description": "The number of input tokens served from a provider-managed cache." },
+    { "id": "gen_ai.usage.cache_write.input_tokens", "type": "int", "stability": "development", "description": "The number of input tokens written to a provider-managed cache." },
+    { "id": "gen_ai.usage.reasoning.output_tokens", "type": "int", "stability": "development", "description": "The number of output tokens used for reasoning (e.g. chain-of-thought, extended thinking)." }
+  ]
+}
