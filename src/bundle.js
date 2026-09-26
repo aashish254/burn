@@ -4,7 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { aggregateEvents } from "./aggregate.js";
 
-// SPEC-2 §E: teams without a backend. A bundle is the §6 document plus
+// Teams without a backend. A bundle is the ledger document plus
 // identity and (unless --compact) the raw events needed for merge fidelity.
 // Distribution is out of scope by design: git or any file share carries the
 // file; there is no server, and burn never touches the network.
@@ -28,12 +28,12 @@ export function deviceId() {
 }
 
 // Display-only: SHA-256 of the hostname truncated to 8 hex chars. Never the
-// hostname itself (v1 §9 privacy carries into bundles).
+// hostname itself (the privacy rules carry into bundles).
 export function hostnameHash() {
   return crypto.createHash("sha256").update(os.hostname()).digest("hex").slice(0, 8);
 }
 
-// §F event shape: UsageEvent + cost + `attribution` instead of the internal
+// Exported event shape: UsageEvent + cost + `attribution` instead of the internal
 // `unit`. `dir` (a full path) is stripped — bundles are shareable files.
 export function bundleEvents(events) {
   return events.map(({ unit, dir, __device, ...rest }) => ({
@@ -48,10 +48,10 @@ export function toBundle(ledger, { supportedAgents, compact = false, pricingHash
     generatedAt: new Date().toISOString(),
     deviceId: deviceId(),
     hostnameHash: hostnameHash(),
-    // SPEC-3-5 §V5.C: reproducible-estimates anchor. null is the stable
+    // Reproducible-estimates anchor. null is the stable
     // "no pricing table applied to this ledger" marker, never a hash of nothing.
     pricingHash,
-    supportedAgents, // §F: [{ id, storePath?, status: "ready"|"planned" }] — caller owns the truth
+    supportedAgents, // [{ id, storePath?, status: "ready"|"planned" }] — caller owns the truth
     ...ledger,
   };
   if (compact) delete doc.events;
@@ -72,7 +72,7 @@ export function readBundle(file) {
   return doc;
 }
 
-// SPEC-2 §E.2, normative and order-independent:
+// Merge identity — normative and order-independent:
 // identity = (deviceId, agent, sessionId, index-within-session); sets UNION;
 // identical inputs are idempotent; buckets RECOMPUTE, never sum.
 export function mergeBundles(docs, options = {}) {
@@ -87,7 +87,7 @@ export function mergeBundles(docs, options = {}) {
       const id = `${sk}|${idx}`;
       if (!byIdentity.has(id)) {
         const { attribution, ...rest } = ev;
-        void attribution; // units re-resolve on THIS machine (§B ladder, local attributes)
+        void attribution; // units re-resolve on THIS machine (attribution ladder, local attributes)
         byIdentity.set(id, { ...rest, __device: dev });
       }
     }
@@ -127,7 +127,7 @@ export function loadRoster() {
   }
 }
 
-// §E.3: per-human totals from merged events (deviceId is the human; names only
+// Per-human totals from merged events (deviceId is the human; names only
 // via the local roster.json), plus per-repo totals.
 export function teamView(merged, roster) {
   const byDevice = new Map();

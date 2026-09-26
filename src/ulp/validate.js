@@ -5,7 +5,7 @@
 // anyOf. A schema using anything outside this vocabulary is a bug in our own
 // schema file, caught by the unit test that asserts the vocabulary.
 //
-// relaxUnknown (SPEC-3-5 §V3.A): when validating a document whose ULP minor
+// relaxUnknown: when validating a document whose ULP minor
 // is NEWER than this schema, unknown properties are ignored instead of
 // rejected — "consumers MUST ignore unknown fields".
 

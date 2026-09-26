@@ -13,7 +13,7 @@ export const label = "codex";
 // event_msg whose payload.type is "token_count". No dollars are stored — cost
 // is estimated from the pricing table, and unpriced models report tokens only.
 //
-// Normalized event shape (SPEC §5 extractor contract):
+// Normalized event shape (extractor contract):
 // { agent, sessionId, model, repo, dir, date, tokens:{...}, gitBranch, ts, storedCost }
 
 function codexRoot() {
@@ -109,7 +109,7 @@ export function* extract() {
           model,
           dir,
           repo,
-          gitBranch, // SPEC-2 §B native attribution when Codex recorded the branch
+          gitBranch, // native attribution when Codex recorded the branch
           ts,
           date: (d.timestamp || "").slice(0, 10) || "unknown",
           tokens: usageTokens(usage),

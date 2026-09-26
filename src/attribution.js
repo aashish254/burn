@@ -1,4 +1,4 @@
-// SPEC-2 §B — Work attribution: every event resolves to exactly one WorkUnit,
+// Work attribution: every event resolves to exactly one WorkUnit,
 // with a confidence ladder: native (explicit or source-recorded branch) >
 // joined (timestamp↔git, done by git.js for range blame) > guess (repo
 // fallback) > unattributed. Resolution is total: Σ workUnit costs == totals.
@@ -36,7 +36,7 @@ export function saveAttribute(session, unitName) {
   return p;
 }
 
-// Resolution order per SPEC-2 §B.1
+// Resolution order:
 export function resolveUnit(ev, attrs) {
   const explicit =
     (attrs && attrs[`${ev.agent}:${ev.sessionId}`]) || (attrs && attrs[ev.sessionId]) || null;

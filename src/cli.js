@@ -22,7 +22,7 @@ import * as codex from "./extractors/codex.js";
 import * as gemini from "./extractors/gemini.js";
 
 const SOURCES = [claude, opencode, codex, gemini];
-const SPEC_VERSION = "2.0"; // SPEC-2 §F: additive over v1's "1.0"
+const SPEC_VERSION = "2.0"; // the wire format is additive over 1.0
 
 const HELP = `burn — a local ledger for where your AI budget actually goes
 
@@ -40,19 +40,19 @@ commands
   agents      cost & tokens per coding agent
   daily       day-by-day spend
   sessions    the individual priciest sessions
-  work        cost per work unit — branch / commit-adjacent / repo (SPEC-2 §B)
+  work        cost per work unit — branch / commit-adjacent / repo
   blame REF   what a branch or commit range cost (e.g. blame feature/pay or A..B)
   attribute SESSION --unit NAME   charge a session to a named unit (overrides git)
   sources     which agents were found, where, and how much data each gave
-  budget      exit 3 when a repo's spend in a period exceeds --max (SPEC-2 §C.3)
+  budget      exit 3 when a repo's spend in a period exceeds --max
   forecast    trend + last-7d-mean projection (est-forecast, priced events only)
   counterfactual --route MODEL   replay your ledger at one model's list price
   doctor      deterministic advice R-1..R-6 (advisory, exit 0)
   watch       print cost lines as new agent turns land on disk
   export      write a shareable bundle (deviceId + events; --compact = report-only)
                         --ulp = pure ULP 1.0 core document (schema-validated)
-  ingest    accept any conformant ULP ledger (SPEC-3-5 §V3.B); --list, --strict, --otel
-  export --otel            write OTLP/JSON to a file (offline transform, §V5.B)
+  ingest    accept any conformant ULP ledger; --list, --strict, --otel
+  export --otel            write OTLP/JSON to a file (offline transform)
   ingest --otel FILE.json  read OTLP/JSON back into the ledger (lossless-or-loud)
   conformance run the ULP conformance kit (pure-JSON vectors; exit 2 on fail)
   merge       union bundles from many machines into one ledger (recompute-not-sum)
@@ -72,7 +72,7 @@ options
   --since <YYYY-MM-DD>   only count usage on/after a date
   --history / --no-history  fold local snapshots in via the union identity.
                         Default ON: report, budget --period month|all, forecast;
-                        OFF elsewhere so v1/v2 output stays byte-stable (§V4.A)
+                        OFF elsewhere so plain report output stays byte-stable
   --yes                 explicit confirmation for destructive commands
   --month <YYYY-MM>     report window, default current UTC month
   --budget <usd>        plan ceiling in dollars
@@ -164,7 +164,7 @@ function parseArgs(argv) {
   return args;
 }
 
-// SPEC-2 §C.3: budget periods are UTC-aligned; "all" means no since filter.
+// Budget periods are UTC-aligned; "all" means no since filter.
 function periodSince(period) {
   if (period === "all") return null;
   const now = new Date();
@@ -195,15 +195,15 @@ function loadUserPricing(cliPath) {
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
       console.error(paint(P.yellow, `burn: ignoring ${c}: expected an object of {model: prices}`));
     } catch {
-      // SPEC §4: malformed overrides are warned about and ignored, never fatal.
+      // Malformed pricing overrides are warned about and ignored, never fatal.
       console.error(paint(P.yellow, `burn: ignoring malformed JSON at ${c}`));
     }
   }
   return {};
 }
 
-// SPEC-3-5 §V4.A: --history default is per-command. ON where the question is
-// inherently historical; OFF elsewhere so v1/v2 consumers see stable numbers.
+// The --history default is per-command. ON where the question is
+// inherently historical; OFF elsewhere so report consumers see stable numbers.
 function historyOn(cmd, args) {
   if (args.history !== null) return args.history;
   if (cmd === "forecast" || cmd === "report" || cmd === "attest" || cmd === "plan") return true;
@@ -224,7 +224,7 @@ async function gather(args, extra = {}, useHistory = false) {
   let ledger;
   const others = [...historyDocs, ...ingestDocs];
   if (others.length) {
-    // §V3.B/§E.2/§V4.A: external bundles join every command through the union
+    // External bundles join every command through the union
     // identity, and mergeBundles is FIRST-WINS — so document order IS the
     // tie-break: live first (live beats everything), snapshots newest-first
     // (newer beats older), then ingested bundles.
@@ -299,14 +299,14 @@ function empty() {
 }
 
 function extractorMissing(ledger) {
-  // With ingest (§V3.B) a machine with zero local transcripts can still hold a
+  // With ingest a machine with zero local transcripts can still hold a
   // real ledger — emptiness is about EVENTS, not about found extractors.
   return ledger.totals.events === 0;
 }
 
 function renderWork(units) {
   if (!units.length) return;
-  header(paint(P.bold + P.cyan, "By work unit") + paint(P.gray, "  (SPEC-2 §B: explicit > branch > repo fallback)"));
+  header(paint(P.bold + P.cyan, "By work unit") + paint(P.gray, "  (attribution: explicit > branch > repo fallback)"));
   const max = Math.max(1e-9, ...units.map((u) => u.cost));
   for (const u of units) {
     console.log(
@@ -362,7 +362,7 @@ function costClasses(b) {
   return parts.join("+") || "—";
 }
 
-// SPEC-2 §A.2: every adapter reports its resolved path and what it yielded,
+// Every adapter reports its resolved path and what it yielded,
 // including sources that were NOT found — this is "why is my number small".
 function sourcesDoc(ledger) {
   return SOURCES.map((s) => {
@@ -381,7 +381,7 @@ function sourcesDoc(ledger) {
 }
 
 function renderSources(ledger) {
-  header(paint(P.bold + P.cyan, "Sources") + paint(P.gray, "  (SPEC-2 §A.2 — what burn found on this machine)"));
+  header(paint(P.bold + P.cyan, "Sources") + paint(P.gray, "  — what burn found on this machine"));
   for (const row of sourcesDoc(ledger)) {
     const mark = row.found ? paint(P.green, "✓") : paint(P.red, "✗");
     const span = row.firstDate ? `${row.firstDate} → ${row.lastDate}` : "no events";
@@ -460,7 +460,7 @@ function runBudget(args, ledger) {
   process.exit(over ? 3 : 0);
 }
 
-// SPEC-2 §G: pure fs polling on an interval; never a daemon, never a SQLite
+// Watch is pure fs polling on an interval; never a daemon, never a SQLite
 // write path — each cycle re-queries what the extractors already expose.
 async function runWatch(args) {
   const interval = Number(args.interval);
@@ -544,7 +544,7 @@ function renderCounterfactual(cf) {
 }
 
 function renderDoctor(findings) {
-  header(paint(P.bold + P.cyan, "Doctor") + paint(P.gray, "  deterministic rules R-1..R-6 (SPEC-2 §D + SPEC-3-5 §V4.C) — advisory, exit 0"));
+  header(paint(P.bold + P.cyan, "Doctor") + paint(P.gray, "  deterministic rules R-1..R-6 — advisory, exit 0"));
   if (!findings.length) {
     console.log(paint(P.green, "  no findings — cache discipline, model mix, drift and pricing all look healthy."));
     return;
@@ -557,7 +557,7 @@ function renderDoctor(findings) {
   }
 }
 
-// SPEC-2 §C/§D forward money. Shared by --json and text so both never diverge.
+// Forward money and advice. Shared by --json and text so both never diverge.
 function forwardMoney(cmd, args, ledger, pricing) {
   const events = ledger.events || [];
   if (cmd === "forecast") {
@@ -575,10 +575,10 @@ function forwardMoney(cmd, args, ledger, pricing) {
   return renderDoctor(findings);
 }
 
-// SPEC-2 §E bundle commands.
+// Bundle commands: export / merge / team.
 // A bundle is a SHAREABLE file (P3): absolute store paths never travel,
 // even in the non---ulp burn flavor — tilde-form or omit, always.
-// SPEC-3-5 §V5.C: hash the table ONLY when it actually priced something;
+// Hash the pricing table ONLY when it actually priced something;
 // an all-billed/unpriced ledger gets the stable null marker, never a hash
 // of nothing.
 function pricingHashFor(ledger, pricing) {
@@ -592,7 +592,7 @@ function shareableSupportedAgents() {
   });
 }
 
-// SPEC-3-5 §V4.A: history is written as an ordinary, schema-valid ULP bundle.
+// History is written as ordinary, schema-valid ULP bundles.
 function ulpSnapshotDoc(ledger, pricing) {
   const doc = toUlpDocument(
     toBundle(ledger, { supportedAgents: shareableSupportedAgents(), pricingHash: pricingHashFor(ledger, pricing) })
@@ -626,7 +626,7 @@ function runExport(args, ledger, pricing) {
     process.exit(2);
   }
   if (args.ulp || args.otel) {
-    // SPEC-3-5 §V3.A: a pure-core ULP document, validated against the schema
+    // A pure-core ULP document, validated against the schema
     // before it leaves the machine. If burn can't satisfy its own protocol,
     // that's a bug — refuse loudly instead of shipping a bad bundle.
     doc = toUlpDocument(doc);
@@ -639,7 +639,7 @@ function runExport(args, ledger, pricing) {
   }
   let json;
   if (args.otel) {
-    // SPEC-3-5 §V5.B: pure offline transform to OTLP/JSON — a file, never a
+    // Pure offline transform to OTLP/JSON — a file, never a
     // socket. Lossless-or-loud: any unrepresentable field fails the command.
     const { otlp, summary } = toOtlp(doc);
     if (summary.dropped.length) {
@@ -722,7 +722,7 @@ function runTeam(args, files) {
   section("By repository (team)", view.repos, 15);
 }
 
-// SPEC-3-5 §V3.B ingest command.
+// Ingest command: accept any conformant ULP ledger.
 async function runIngest(args) {
   if (args.list) {
     const rows = listIngested();
@@ -777,7 +777,7 @@ async function runIngest(args) {
     let inspected, stored;
     try {
       if (args.otel) {
-        // SPEC-3-5 §V5.B inverse: OTLP/JSON file → ULP bundle, then the
+        // Inverse transform: OTLP/JSON file → ULP bundle, then the
         // EXACT same negotiate/validate/mismatch pipeline as plain ingest.
         const bundle = fromOtlp(JSON.parse(fs.readFileSync(f, "utf8")));
         inspected = inspectDoc(bundle, path.basename(f), pricing);
@@ -811,13 +811,13 @@ async function runIngest(args) {
   }
   console.log(
     paint(P.green, `burn: ${files.length} bundle(s) validated`) +
-      paint(P.gray, ` · ${newBundles} new · ${totalEvents} events join every report via §E.2 union`) +
+      paint(P.gray, ` · ${newBundles} new · ${totalEvents} events join every report via the merge union`) +
       (totalMismatches ? paint(P.yellow, ` · ${totalMismatches} cost mismatches reported`) : "")
   );
   if (args.strict && totalMismatches > 0) process.exit(2);
 }
 
-// ---------- report (SPEC-3-5 §V4.B) ----------
+// ---------- report ----------
 
 function mdBucketTable(title, buckets, labelHead) {
   const rows = buckets.filter((b) => b.events > 0);
@@ -879,7 +879,7 @@ function runReport(args, ledger, pricing) {
   console.log(text);
 }
 
-// ---------- attest (SPEC-3-5 §V5.C) ----------
+// ---------- attest ----------
 
 function runAttest(args, ledger, pricing) {
   const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -895,7 +895,7 @@ function runAttest(args, ledger, pricing) {
   md.push(`Issued ${new Date().toISOString()} · burn ${pkg.version} · ledger specVersion ${SPEC_VERSION} · ULP ${ULP_VERSION}.`);
   md.push("");
   md.push("## Measured");
-  md.push(`- window ${args.since} → ${args.until} (UTC, exclusive), local snapshot history merged under §E.2 union`);
+  md.push(`- window ${args.since} → ${args.until} (UTC, exclusive), local snapshot history merged under the same union rule as burn merge`);
   md.push(`- ${t.events} usage events · ${ledger.agents.length} agent(s) · ${ledger.repos.length} repository/repositories`);
   md.push(`- ${(t.tokens.input + t.tokens.output).toLocaleString("en-US")} tokens (input + output)`);
   md.push("");
@@ -926,7 +926,7 @@ function runAttest(args, ledger, pricing) {
   console.log(text);
 }
 
-// ---------- init (SPEC-3-5 §V5.D) ----------
+// ---------- init ----------
 
 const BURN_GENERATED = "generated by burn init --team";
 
@@ -995,7 +995,7 @@ jobs:
 
 function runInit(args) {
   if (!args.team) {
-    console.error(paint(P.red, "usage: burn init --team   (v5 knows one scaffold: the serverless team sync)"));
+    console.error(paint(P.red, "usage: burn init --team   (the only scaffold today is the serverless team sync)"));
     process.exit(2);
   }
   let inRepo = false;
@@ -1036,7 +1036,7 @@ function runInit(args) {
   console.log(paint(P.green, "burn: scaffold ready —") + paint(P.gray, " git add team/usage .github && git commit, then run this workflow on a self-hosted runner."));
 }
 
-// ---------- plan (SPEC-3-5 §V4.B) ----------
+// ---------- plan ----------
 
 function runPlan(args, ledger) {
   const priced = (ledger.events || []).filter((e) => e.costSource !== "unpriced" && e.cost != null);
@@ -1135,7 +1135,7 @@ async function main() {
   if (cmd === "watch") return runWatch(args);
 
   if (cmd === "conformance") {
-    // SPEC-3-5 §V3.C: the ULP kit, runnable without any agent data.
+    // The ULP conformance kit, runnable without any agent data.
     const results = runKit();
     const failed = results.filter((r) => !r.pass);
     if (args.json) {
@@ -1297,8 +1297,8 @@ async function main() {
         {
           specVersion: SPEC_VERSION,
           generatedAt: new Date().toISOString(),
-          supportedAgents: SOURCES.map((s) => s.label), // SPEC-2 §A: the truth, vs the plan
-          pricingHash: pricingHashFor(ledger, pricing), // SPEC-3-5 §V5.C (null = table never applied)
+          supportedAgents: SOURCES.map((s) => s.label), // the truth, vs the plan
+          pricingHash: pricingHashFor(ledger, pricing), // null = table never applied
           ...ledger,
         },
         null,
@@ -1383,6 +1383,6 @@ if (!process.env.BURN_QUIET) {
 } else {
   main().catch((e) => {
     console.error(paint(P.red, "burn error: ") + (e?.stack || e?.message || e));
-    process.exit(2); // SPEC §7: 0 report · 1 no data · 2 unexpected error
+    process.exit(2); // exit codes: 0 report · 1 no data · 2 unexpected error
   });
 }

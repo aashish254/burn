@@ -1,9 +1,9 @@
-// SPEC-3-5 §V3.B — `burn ingest`: burn becomes a CONSUMER of any conformant
+// `burn ingest`: burn becomes a CONSUMER of any conformant
 // ULP ledger, not just a reader of its own extractors. Files are validated
 // (schema + provenance integrity) BEFORE they are trusted, then stored
 // content-addressed under ~/.burn/ingest/ (the one place burn writes beyond
 // its config files; trivially deletable). Merging into every command reuses
-// the §E.2 union identity — foreign data is indistinguishable from a foreign
+// the merge union identity — foreign data is indistinguishable from a foreign
 // device's export, and double-counting is impossible by construction.
 
 import fs from "node:fs";
@@ -19,7 +19,7 @@ export function ingestDir() {
 
 // Honest recomputation: an external bundle claims costSource "estimate" for a
 // model WE can price → re-derive from the recorded tokens and compare. A
-// mismatch is REPORTED, never repaired (§V3.B: their history, their number —
+// mismatch is REPORTED, never repaired (their history, their number —
 // we surface the disagreement, loudly, and let the human decide).
 export function checkEstimatedCosts(events, pricing) {
   const mismatches = [];

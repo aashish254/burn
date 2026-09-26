@@ -1,4 +1,4 @@
-// SPEC-3-5 §V5.B — the OpenTelemetry seam: TRANSLATION, not adoption.
+// The OpenTelemetry seam: TRANSLATION, not adoption.
 // `burn export --otel` writes OTLP/JSON to a FILE (pure transform, offline);
 // `burn ingest --otel` reads it back. Core never opens a collector socket.
 // Field-by-field rationale lives in ulp/otel-mapping.md, pinned against
@@ -180,7 +180,7 @@ export function fromOtlp(otlp) {
       }
     }
   }
-  // session order is identity-relevant (§E.2 index-within-session): restore
+  // Session order is identity-relevant (index-within-session): restore
   // the producer's per-session numbering before regrouping by session.
   events.sort((x, y) => x.__idx - y.__idx);
   const ordered = [];

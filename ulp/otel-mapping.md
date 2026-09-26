@@ -46,7 +46,7 @@ Documented, never smuggled: these ride as span attributes named `ulp.*`.
 | `storedCost` | `ulp.storedCost` | ditto |
 | `gitBranch` | `ulp.gitBranch` | attribution input |
 | `attribution.*` | `ulp.attribution.kind` / `.ref` / `.confidence` | WorkUnit attribution has no OTel slot |
-| session order | `ulp.eventIndex` | preserves the §E.2 identity `(deviceId, agent, sessionId, index)` |
+| session order | `ulp.eventIndex` | preserves the merge identity `(deviceId, agent, sessionId, index)` |
 
 Span identity: `traceId` = first 32 hex of `sha256(deviceId|agent|sessionId|index)`,
 `spanId` = next 16 hex — deterministic, so re-export is byte-identical and
@@ -61,7 +61,7 @@ Every `ulp.*` attribute above is read back; the five usage token counters
 supply tokens;
 `ulp.cost`/`ulp.costSource`/`ulp.storedCost` restore money **exactly as the
 producer recorded it** — ingested estimates are checked against local pricing
-and *reported*, never repaired (§V3.B, unchanged).
+and *reported*, never silently repaired.
 
 ## Lossless-or-loud
 

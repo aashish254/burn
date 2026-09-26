@@ -21,7 +21,7 @@ export function paint(code, s) {
 export const palette = C;
 
 // Derive a friendly repo label from a working directory path.
-// SPEC §2.2: basename only; the home dir itself must not leak a username.
+// Repo labels are basenames only; the home dir itself must not leak a username.
 export function repoFromDir(dir) {
   if (!dir) return "(unknown)";
   const trimmed = dir.replace(/\/+$/, "");

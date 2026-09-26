@@ -1,7 +1,7 @@
 import { estimateCost } from "./pricing.js";
 import { commitCount } from "./git.js";
 
-// SPEC-2 §C/§D: forward-looking money and advice — pure arithmetic over the
+// Forward-looking money and advice — pure arithmetic over the
 // recorded ledger. No LLM, no vibes, no invented prices: every number here is
 // either recorded, or table pricing applied to recorded tokens.
 
@@ -19,7 +19,7 @@ function median(nums) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
-// ---------- forecast (SPEC-2 §C.1) ----------
+// ---------- forecast ----------
 
 // Least-squares line + last-7-day mean over a fixed-size daily series.
 // Exported for snapshot tests: same input, same numbers, forever.
@@ -102,10 +102,10 @@ export function forecast(events, { windowDays = 30 } = {}) {
   };
 }
 
-// ---------- plan (SPEC-3-5 §V4.B) ----------
+// ---------- plan ----------
 
 // "Can I afford X months at Y dollars?" — linear-series math only: the same
-// least-squares daily forecast as §C.1, accumulated over the horizon. The
+// least-squares daily forecast, accumulated over the horizon. The
 // exhaustion date is a property of an INCREASING series; anything else says
 // null rather than inventing a date.
 export function plan(events, { repo, budgetUsd, months, windowDays = 30 }) {
@@ -145,7 +145,7 @@ export function plan(events, { repo, budgetUsd, months, windowDays = 30 }) {
   };
 }
 
-// ---------- counterfactual (SPEC-2 §C.2) ----------
+// ---------- counterfactual ----------
 
 // Replays every recorded token of `events` at routeModel's list price.
 // Unpriced target ⇒ null ⇒ the honest answer is "—", never a guess.
@@ -176,7 +176,7 @@ export function counterfactual(events, pricing, routeModel) {
   };
 }
 
-// ---------- doctor (SPEC-2 §D) — rules R-1..R-4, deterministic ----------
+// ---------- doctor — rules R-1..R-6, deterministic ----------
 
 const OPUS_TIER = /^claude-opus/;
 const CHEAP_ROUTE = "claude-sonnet-4"; // R-2's suggested downgrade target

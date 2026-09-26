@@ -52,7 +52,7 @@ export async function loadPricing(overrides = {}) {
   for (const [model, price] of Object.entries(overrides || {})) {
     map.set(model, { ...(map.get(model) || {}), ...price });
   }
-  // SPEC §4: exact match, else the longest key whose remainder is a version
+  // Exact match, else the longest key whose remainder is a version
   // suffix ("-20260901"). Variant names (gpt-5-micro) never inherit a sibling's price.
   const isVersionSuffix = (rest) => rest === "" || /^[-.]\d/.test(rest);
   function resolve(modelId) {
@@ -72,7 +72,7 @@ export async function loadPricing(overrides = {}) {
     },
     lookup: resolve,
     size: () => map.size,
-    // SPEC-3-5 §V5.C: SHA-256 over the EFFECTIVE table (defaults merged with
+    // SHA-256 over the EFFECTIVE table (defaults merged with
     // user overrides), canonicalized: models sorted, fields sorted. Same
     // table + same tokens = same dollars, provable years later without
     // trusting the table owner. 12 hex is collision-safe at human scale

@@ -71,8 +71,8 @@ export function* extract() {
         model,
         dir: d.cwd || null,
         repo: repoFromDir(d.cwd),
-        gitBranch: d.gitBranch || null, // SPEC-2 §B native attribution
-        ts: d.timestamp ? Date.parse(d.timestamp) : null, // SPEC-2 §F for range joins
+        gitBranch: d.gitBranch || null, // native attribution
+        ts: d.timestamp ? Date.parse(d.timestamp) : null, // ms epoch, for range joins
         date: (d.timestamp || "").slice(0, 10) || "unknown",
         tokens: {
           input: usage.input_tokens || 0,

@@ -1,4 +1,4 @@
-// SPEC-2 §B.2 — read-only git joiner for commit-range blame.
+// Read-only git joiner for commit-range blame.
 // Only ever runs `git log` (never lock/fetch/write), silently skips anything
 // that is not a readable repo, and never lets a ref look like a flag.
 
@@ -17,7 +17,7 @@ export function revTime(dir, ref) {
   return Number.isFinite(t) ? t : null;
 }
 
-// SPEC-3-5 §V4.C R-6: how many commits a repo shows inside a date window.
+// Doctor R-6: how many commits a repo shows inside a date window.
 // Read-only (`git log`), null on any failure (not a repo, no history, no git)
 // so callers silently skip. Dates are validated to look like dates, never
 // flags.

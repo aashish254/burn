@@ -14,7 +14,7 @@ export const label = "gemini-cli";
 // No dollars and no git branch are stored, so cost is estimated and attribution
 // falls back to the repo (from `directories`) — never a fabricated branch.
 //
-// Normalized event shape (SPEC §5):
+// Normalized event shape:
 // { agent, sessionId, model, repo, dir, date, tokens:{...}, gitBranch:null, ts, storedCost:null }
 
 function geminiRoot() {

@@ -18,8 +18,8 @@ import { revTime, blameRange } from "../src/git.js";
 import { forecastSeries, forecast, counterfactual, doctor } from "../src/advise.js";
 import { mergeBundles, auditBundles, teamView, bundleEvents } from "../src/bundle.js";
 
-// ---------- SPEC-2 §B attribution ladder (unit level) ----------
-test("H10: resolution ladder — explicit > branch > repo > unattributed", () => {
+// ---------- attribution ladder (unit level) ----------
+test("resolution ladder — explicit > branch > repo > unattributed", () => {
   const evBase = { agent: "a", sessionId: "s1", repo: "r", gitBranch: "feat/x", dir: "/x/r" };
   assert.deepEqual(resolveUnit(evBase, {}), { kind: "branch", name: "feat/x", confidence: "native" });
   assert.deepEqual(resolveUnit(evBase, { "a:s1": "billing sprint" }), {
@@ -33,7 +33,7 @@ test("H10: resolution ladder — explicit > branch > repo > unattributed", () =>
   });
 });
 
-test("H11: reconciliation — Σ workUnit costs == totals.cost (incl. unattributed residue)", async () => {
+test("reconciliation — Σ workUnit costs == totals.cost (incl. unattributed residue)", async () => {
   const croot = fs.mkdtempSync(path.join(os.tmpdir(), "burn-recon-"));
   const proj = path.join(croot, "-p");
   fs.mkdirSync(proj);
@@ -64,7 +64,7 @@ test("H11: reconciliation — Σ workUnit costs == totals.cost (incl. unattribut
   delete process.env.BURN_OPENCODE_DB;
 });
 
-test("H10: explicit attribute overrides branch at collect level", async () => {
+test("explicit attribute overrides branch at collect level", async () => {
   const croot = fs.mkdtempSync(path.join(os.tmpdir(), "burn-attr-"));
   const proj = path.join(croot, "-p");
   fs.mkdirSync(proj);
@@ -84,7 +84,7 @@ test("H10: explicit attribute overrides branch at collect level", async () => {
   delete process.env.BURN_OPENCODE_DB;
 });
 
-// ---------- H10/§B.2 git joiner against a REAL throwaway repo ----------
+// ---------- git joiner against a REAL throwaway repo ----------
 function gitSetup() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "burn-gitrepo-"));
   const env = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_SYSTEM: "/dev/null", HOME: dir };
@@ -104,7 +104,7 @@ function gitSetup() {
   return { dir, run, commit };
 }
 
-test("H10: blameRange joins dated events to commit windows (confidence joined)", () => {
+test("blameRange joins dated events to commit windows (confidence joined)", () => {
   const g = gitSetup();
   g.commit("a.txt", "2026-09-01T10:00:00Z");
   g.commit("b.txt", "2026-09-01T12:00:00Z");
@@ -161,7 +161,7 @@ test("formatting helpers", () => {
   assert.equal(fmtTokens(2_500_000), "2.50M");
 });
 
-// ---------- SPEC §10 conformance vectors ----------
+// ---------- conformance vectors ----------
 
 test("V8: repo label derivation edge cases (basename only, no home leak)", () => {
   assert.equal(repoFromDir("/Users/x/repos/api-gateway"), "api-gateway");
@@ -171,7 +171,7 @@ test("V8: repo label derivation edge cases (basename only, no home leak)", () =>
   assert.equal(repoFromDir(null), "(unknown)");
 });
 
-test("§4 pricing: longest-prefix wins; reverse prefix must not match; date suffixes OK", async () => {
+test("pricing: longest-prefix wins; reverse prefix must not match; date suffixes OK", async () => {
   const pricing = await loadPricing({
     "foo": { input: 10, output: 10, cacheWrite: 10, cacheRead: 10 },
     "foo-mini": { input: 1, output: 1, cacheWrite: 1, cacheRead: 1 },
@@ -185,7 +185,7 @@ test("§4 pricing: longest-prefix wins; reverse prefix must not match; date suff
   assert.equal(pricing.lookup(undefined), null);
 });
 
-test("§4: claude date-suffixed ids price at their family", async () => {
+test("claude date-suffixed ids price at their family", async () => {
   const pricing = await loadPricing({});
   assert.equal(estimateCost({ model: "claude-opus-4-1-20260901", input: 1_000_000, output: 0 }, pricing), 15);
 });
@@ -276,17 +276,17 @@ function spawnCli(args, extraEnv = {}) {
   });
 }
 
-test("§6: --json document conforms (specVersion, numeric costs, desc sort, key fields)", () => {
+test("--json document conforms (specVersion, numeric costs, desc sort, key fields)", () => {
   const { claudeDir, dbFile } = makeFixtures();
   const r = spawnCli(["--json"], { BURN_CLAUDE_DIR: claudeDir, BURN_OPENCODE_DB: dbFile });
   assert.equal(r.status, 0, r.stderr.toString());
   const j = JSON.parse(r.stdout.toString());
   assert.equal(j.specVersion, "2.0");
-  // SPEC-2 §F: v2 is additive-only over v1 — every v1 key must still be there.
+  // specVersion 2.0 is additive-only over 1.0 — every 1.0 key must still be there.
   for (const k of ["totals", "cacheHit", "totalTokens", "sources", "repos", "models", "agents", "days", "sessions"])
     assert.ok(k in j, `v1 key ${k} must survive in 2.0`);
   assert.ok(Array.isArray(j.workUnits ?? j.units), "v2 units present");
-  assert.deepEqual(j.supportedAgents, ["claude-code", "opencode", "codex", "gemini-cli"], "H15: only verified formats are claimed");
+  assert.deepEqual(j.supportedAgents, ["claude-code", "opencode", "codex", "gemini-cli"], "only verified formats are claimed");
   assert.equal(j.totals.key, "total");
   for (const b of [...j.repos, ...j.models, ...j.agents, ...j.days]) {
     assert.equal(typeof b.cost, "number", "cost is never null");
@@ -302,7 +302,7 @@ test("§6: --json document conforms (specVersion, numeric costs, desc sort, key 
   assert.ok(j.repos.some((x) => x.key === "billed-repo" && x.cost === 2.5));
 });
 
-test("§7: --since excludes unknown-dated events", () => {
+test("--since excludes unknown-dated events", () => {
   const { claudeDir, dbFile } = makeFixtures();
   const r = spawnCli(["--json", "--since", "2026-08-15"], {
     BURN_CLAUDE_DIR: claudeDir,
@@ -315,7 +315,7 @@ test("§7: --since excludes unknown-dated events", () => {
   assert.ok(j.repos.some((x) => x.key === "pricy-repo"), "post-cutoff kept");
 });
 
-test("§8: NO_COLOR ⇒ zero ANSI bytes in stdout", () => {
+test("NO_COLOR ⇒ zero ANSI bytes in stdout", () => {
   const { claudeDir, dbFile } = makeFixtures();
   const r = spawnCli([], { BURN_CLAUDE_DIR: claudeDir, BURN_OPENCODE_DB: dbFile, NO_COLOR: "1" });
   assert.equal(r.status, 0, r.stderr.toString());
@@ -347,7 +347,7 @@ test("V6: cacheHit is exactly 0 on a zero-prompt bucket", async () => {
   delete process.env.BURN_OPENCODE_DB;
 });
 
-test("§7 exit codes: 0 on report, 1 on empty machine (stdout silent), via real CLI", async () => {
+test("exit codes: 0 on report, 1 on empty machine (stdout silent), via real CLI", async () => {
   const { spawnSync } = await import("node:child_process");
   const { fileURLToPath } = await import("node:url");
   const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
@@ -361,7 +361,7 @@ test("§7 exit codes: 0 on report, 1 on empty machine (stdout silent), via real 
   assert.match(r.stderr.toString(), /no supported agent data/i);
 });
 
-// ---------- SPEC-2 §A.2 sources · §C.3 budget · §G confidence filter ----------
+// ---------- sources · budget · confidence filter ----------
 function fixtureEnv() {
   const { claudeDir, dbFile } = makeFixtures();
   // Point codex/gemini at existing (but session-less) dirs so `sources` is
@@ -371,7 +371,7 @@ function fixtureEnv() {
   return { BURN_CLAUDE_DIR: claudeDir, BURN_OPENCODE_DB: dbFile, BURN_CODEX_DIR: codexDir, BURN_GEMINI_DIR: geminiDir };
 }
 
-test("§A.2 sources --json: reports resolved paths, found flag, event counts, date span", () => {
+test("sources --json: reports resolved paths, found flag, event counts, date span", () => {
   const env = fixtureEnv();
   const r = spawnCli(["sources", "--json"], env);
   assert.equal(r.status, 0, r.stderr.toString());
@@ -395,7 +395,7 @@ test("§A.2 sources --json: reports resolved paths, found flag, event counts, da
   assert.equal(o.costClasses, "billed");
 });
 
-test("§A.2 sources: an absent source still reports its checked path (found:false, 0 events)", () => {
+test("sources: an absent source still reports its checked path (found:false, 0 events)", () => {
   const env = fixtureEnv();
   env.BURN_OPENCODE_DB = path.join(env.BURN_CLAUDE_DIR, "does-not-exist.db");
   const r = spawnCli(["sources", "--json"], env);
@@ -406,7 +406,7 @@ test("§A.2 sources: an absent source still reports its checked path (found:fals
   assert.equal(o.costClasses, "—");
 });
 
-test("H13 §C.3 budget: exit 0 under, exit 3 over, --json matches", () => {
+test("budget: exit 0 under, exit 3 over, --json matches", () => {
   const env = fixtureEnv();
   const under = spawnCli(["budget", "--repo", "cheap-repo", "--max", "20", "--period", "all"], env);
   assert.equal(under.status, 0, under.stdout.toString() + under.stderr.toString());
@@ -420,7 +420,7 @@ test("H13 §C.3 budget: exit 0 under, exit 3 over, --json matches", () => {
   assert.equal(j.max, 10);
 });
 
-test("§C.3 budget: unknown repo exits 2 with candidates; missing flags exit 2", () => {
+test("budget: unknown repo exits 2 with candidates; missing flags exit 2", () => {
   const env = fixtureEnv();
   const miss = spawnCli(["budget", "--repo", "nope-does-not-exist", "--max", "5"], env);
   assert.equal(miss.status, 2);
@@ -430,7 +430,7 @@ test("§C.3 budget: unknown repo exits 2 with candidates; missing flags exit 2",
   assert.match(noflags.stderr.toString(), /usage: burn budget/i);
 });
 
-test("§C.3 budget: unique substring resolves with a note; bad --period exits 2", () => {
+test("budget: unique substring resolves with a note; bad --period exits 2", () => {
   const env = fixtureEnv();
   const fuzzy = spawnCli(["budget", "--repo", "billed", "--max", "1", "--period", "all", "--json"], env);
   assert.equal(fuzzy.status, 3, "billed-repo $2.50 > $1 ⇒ over, matched fuzzily");
@@ -440,7 +440,7 @@ test("§C.3 budget: unique substring resolves with a note; bad --period exits 2"
   assert.match(badPeriod.stderr.toString(), /--period must be/i);
 });
 
-test("§G work --confidence: filters work units to the requested ladder rung", () => {
+test("work --confidence: filters work units to the requested ladder rung", () => {
   const env = fixtureEnv();
   const r = spawnCli(["work", "--confidence", "guess", "--json"], env);
   assert.equal(r.status, 0, r.stderr.toString());
@@ -449,14 +449,14 @@ test("§G work --confidence: filters work units to the requested ladder rung", (
   assert.ok(workUnits.every((u) => u.unit.confidence === "guess"));
 });
 
-test("§G bad --confidence value exits 2", () => {
+test("bad --confidence value exits 2", () => {
   const env = fixtureEnv();
   const r = spawnCli(["work", "--confidence", "bogus", "--json"], env);
   assert.equal(r.status, 2);
   assert.match(r.stderr.toString(), /--confidence must be/i);
 });
 
-// ---------- SPEC-2 §C/§D forward money (pure; snapshot-tested) ----------
+// ---------- forward money (pure; snapshot-tested) ----------
 const ev = ({ repo = "r", model = "claude-sonnet-4", costSource = "estimate", cost = 0, date = "2026-09-10", input = 0, output = 0, cacheRead = 0, cacheWrite = 0 }) => ({
   repo, model, costSource, cost, date, tokens: { input, output, cacheRead, cacheWrite, reasoning: 0 },
 });
@@ -557,7 +557,7 @@ test("doctor R-4 unpriced drift: fires when >25% of tokens have no price", async
   assert.ok(!doctor(mostlyPriced, pricing).find((f) => f.rule.startsWith("R-4")), "unpriced <25% ⇒ no fire");
 });
 
-test("§C/§D CLI: forecast/counterfactual/doctor --json payloads, doctor stays advisory", () => {
+test("CLI: forecast/counterfactual/doctor --json payloads, doctor stays advisory", () => {
   const env = fixtureEnv();
   const f = spawnCli(["forecast", "--window", "30", "--json"], env);
   assert.equal(f.status, 0, f.stderr.toString());
@@ -582,7 +582,7 @@ test("§C/§D CLI: forecast/counterfactual/doctor --json payloads, doctor stays 
   assert.ok(Array.isArray(findings));
   for (const fi of findings)
     for (const k of ["rule", "severity", "scope", "observation", "suggested", "estImpactClass", "estImpactUsd"])
-      assert.ok(k in fi, `finding carries §D field ${k}`);
+      assert.ok(k in fi, `finding carries doctor field ${k}`);
 
   const noRoute = spawnCli(["counterfactual"], env);
   assert.equal(noRoute.status, 2);
@@ -590,7 +590,7 @@ test("§C/§D CLI: forecast/counterfactual/doctor --json payloads, doctor stays 
 });
 
 // ---------- H15: source-verified Codex + Gemini formats ----------
-test("H15 codex: rollout JSONL → normalized turns, native branch attribution, no double-count", async () => {
+test("codex: rollout JSONL → normalized turns, native branch attribution, no double-count", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "burn-codex-"));
   const day = path.join(root, "2026", "09", "20");
   fs.mkdirSync(day, { recursive: true });
@@ -618,7 +618,7 @@ test("H15 codex: rollout JSONL → normalized turns, native branch attribution, 
     assert.equal(e.date, "2026-09-20");
     assert.equal(e.storedCost, null, "Codex never stores dollars");
     assert.deepEqual(e.tokens, { input: 2000, output: 400, cacheWrite: 0, cacheRead: 3000, reasoning: 100 }, "cached slice subtracted from full prompt count");
-    // collect-level: gpt-5-codex is a *variant*, not a version suffix ⇒ unpriced (SPEC §4)
+    // collect-level: gpt-5-codex is a *variant*, not a version suffix ⇒ unpriced
     const pricing = await loadPricing({});
     const ledger = await collect([codex], pricing, {});
     assert.equal(ledger.totals.events, 2);
@@ -631,7 +631,7 @@ test("H15 codex: rollout JSONL → normalized turns, native branch attribution, 
   }
 });
 
-test("H15 gemini-cli: chat JSONL → metadata seeds session/repo, tokens unmapped without double-count", async () => {
+test("gemini-cli: chat JSONL → metadata seeds session/repo, tokens unmapped without double-count", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "burn-gemini-"));
   const chats = path.join(root, "my-project-slug", "chats");
   fs.mkdirSync(chats, { recursive: true });
@@ -731,12 +731,12 @@ test("collect: cross-agent ledger, cost provenance, cache rate", async () => {
   delete process.env.BURN_OPENCODE_DB;
 });
 
-// ---------- SPEC-2 §E bundles · merge · team · export ----------
+// ---------- bundles · merge · team · export ----------
 function bundleEvent({ repo = "r", agent = "claude-code", sessionId = "s1", model = "claude-sonnet-4", costSource = "estimate", cost = 5, date = "2026-09-10", input = 1000, output = 0 }) {
   return { agent, sessionId, model, repo, date, costSource, cost, tokens: { input, output, cacheWrite: 0, cacheRead: 0, reasoning: 0 }, unit: { kind: "repo", name: repo, confidence: "guess" } };
 }
 
-test("H12 §E.2 merge: union by identity, recompute-not-sum, idempotent", () => {
+test("merge: union by identity, recompute-not-sum, idempotent", () => {
   const dev = "device-aaa";
   const mk = (events) => ({ deviceId: dev, events });
   const single = mergeBundles([mk([bundleEvent({ cost: 5 }), bundleEvent({ cost: 3 })])]);
@@ -756,7 +756,7 @@ test("H12 §E.2 merge: union by identity, recompute-not-sum, idempotent", () => 
   assert.equal(two.totals.events, 2);
 });
 
-test("§E.2 merge --audit flags duplicate deviceIds from copied ~/.burn/id", () => {
+test("merge --audit flags duplicate deviceIds from copied ~/.burn/id", () => {
   const docs = [
     { deviceId: "same", events: [bundleEvent({})], __file: "a.json" },
     { deviceId: "same", events: [bundleEvent({})], __file: "b.json" },
@@ -767,7 +767,7 @@ test("§E.2 merge --audit flags duplicate deviceIds from copied ~/.burn/id", () 
   assert.deepEqual(audit.duplicates[0].files, ["a.json", "b.json"]);
 });
 
-test("§E.3 team: groups merged events per deviceId (human), honours local roster", () => {
+test("team: groups merged events per deviceId (human), honours local roster", () => {
   const merged = mergeBundles([
     { deviceId: "dev-1", events: [bundleEvent({ cost: 5 }), bundleEvent({ cost: 2 })] },
     { deviceId: "dev-2", events: [bundleEvent({ cost: 9 })] },
@@ -782,7 +782,7 @@ test("§E.3 team: groups merged events per deviceId (human), honours local roste
   assert.equal(anon.cost, 7);
 });
 
-test("§E.1 export --json bundle: deviceId, hostnameHash, supportedAgents ready, events present", () => {
+test("export --json bundle: deviceId, hostnameHash, supportedAgents ready, events present", () => {
   const env = fixtureEnv();
   const idFile = path.join(env.BURN_CLAUDE_DIR, "burn-id");
   const r = spawnCli(["export", "--json"], { ...env, BURN_ID_FILE: idFile });
@@ -797,21 +797,21 @@ test("§E.1 export --json bundle: deviceId, hostnameHash, supportedAgents ready,
   assert.equal(doc.deviceId, fs.readFileSync(idFile, "utf8").trim(), "id file is the source of truth");
 });
 
-test("§E.1 export --compact drops events; full export strips paths + reshapes attribution (privacy)", () => {
+test("export --compact drops events; full export strips paths + reshapes attribution (privacy)", () => {
   const env = fixtureEnv();
   const idFile = path.join(env.BURN_CLAUDE_DIR, "burn-id2");
   const full = JSON.parse(spawnCli(["export"], { ...env, BURN_ID_FILE: idFile }).stdout.toString());
   const compact = JSON.parse(spawnCli(["export", "--compact"], { ...env, BURN_ID_FILE: idFile }).stdout.toString());
   assert.ok(Array.isArray(full.events) && full.events.length === 4, "default export carries raw events for merge fidelity");
-  assert.ok(!("events" in compact), "--compact drops events[] (report-only transport, SPEC-2 §E.2)");
+  assert.ok(!("events" in compact), "--compact drops events[] (report-only transport)");
   const sample = full.events[0];
-  assert.ok(!("dir" in sample), "raw absolute dir path stripped from exported events (v1 §9 privacy)");
+  assert.ok(!("dir" in sample), "raw absolute dir path stripped from exported events (privacy)");
   assert.ok(!("unit" in sample), "internal unit replaced by attribution shape");
   assert.ok(sample.attribution && "confidence" in sample.attribution);
   assert.equal(compact.deviceId, full.deviceId, "same persisted deviceId");
 });
 
-// ---------- SPEC-3-5 §V3.M5: ULP 1.0 schema, negotiation, pure export ----------
+// ---------- ULP 1.0 schema, negotiation, pure export ----------
 import { ulpSchema, negotiate, tildePath, toUlpDocument, validateAgainstUlp } from "../src/ulp/ulp.js";
 import { validate, schemaVocabularyCheck } from "../src/ulp/validate.js";
 
@@ -891,7 +891,7 @@ test("V16 M5-acceptance: the independent Python reader validates a burn --ulp bu
   assert.deepEqual(py.sources, doc.sources, "…and on provenance class counts");
 });
 
-// ---------- SPEC-3-5 §V3.M6: burn ingest ----------
+// ---------- burn ingest ----------
 function foreignBundle(over = {}) {
   const tok = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0, reasoning: 0 };
   const ev = (sessionId, model, tokens, cost, costSource) => ({
@@ -1025,7 +1025,7 @@ test("V3.B: ingest usage gate, directory scan, and --list inventory", () => {
   assert.ok(lj.bundles.every((b) => b.readable && /^[0-9a-f]{16}$/.test(b.file.replace(".json", ""))));
 });
 
-// ---------- SPEC-3-5 §V3.M7: conformance kit, two-language green, docs site ----------
+// ---------- conformance kit, two-language green, docs site ----------
 import { runKit, vectorsDir } from "../src/ulp/conformance.js";
 
 test("V20: the kit itself is pure JSON in → pass/fail out — every vector green in Node", () => {
@@ -1113,7 +1113,7 @@ test("V3.D: docs/ulp static site renders from the repo sources, deterministicall
     assert.ok(pages[f].startsWith("<!doctype html>"), `${f} is a complete page`);
     assert.ok(!/<script|srcdoc|fetch\(/.test(pages[f]), `${f} ships no JavaScript — rendering only`);
   }
-  assert.match(pages["ulp.html"], /<h2 id="3-cost-provenance"/, "SPEC.md headings render with anchors");
+  assert.match(pages["ulp.html"], /<h2 id="3-cost-provenance"/, "ULP spec headings render with anchors");
   assert.match(pages["ulp.html"], /<table>/, "provenance table renders");
   assert.match(pages["conformance.html"], /ULP 1\.0 conformance kit/);
   assert.match(pages["schema.html"], /"ulpVersion"/, "schema JSON is embedded, not lost");
@@ -1124,7 +1124,7 @@ test("V3.D: docs/ulp static site renders from the repo sources, deterministicall
   }
 });
 
-// ---------- SPEC-3-5 §V4.M8: snapshots = self-merge ----------
+// ---------- snapshots = self-merge ----------
 import { historyDir, snapshotName } from "../src/history.js";
 
 // A fully isolated one-session Claude Code fixture: everything else neutral.
@@ -1247,7 +1247,7 @@ test("history ls / drop: inventory, confirmation gate, path safety, deletion", (
   assert.equal(snapshotsIn(path.join(root, "history")).length, 0);
 });
 
-test("§V4.D: snapshot writes only inside BURN_HISTORY_DIR (+ its own id file)", () => {
+test("snapshot writes only inside BURN_HISTORY_DIR (+ its own id file)", () => {
   const { env, root } = histFixture();
   const before = new Set(walkFiles(root));
   assert.equal(spawnCli(["snapshot"], env).status, 0);
@@ -1267,7 +1267,7 @@ function walkFiles(dir) {
   return out;
 }
 
-// ---------- SPEC-3-5 §V4.M9: report + plan + history read budget ----------
+// ---------- report + plan + history read budget ----------
 import { plan as planMath } from "../src/advise.js";
 import { loadSnapshots } from "../src/history.js";
 
@@ -1396,7 +1396,7 @@ test("report: monthly markdown digest — scoped window, provenance, cache, doct
   assert.match(fs.readFileSync(out, "utf8"), /^# burn report — 2026-09/);
 });
 
-// ---------- SPEC-3-5 §V4.M10: doctor grows up — R-5, R-6 ----------
+// ---------- doctor grows up — R-5, R-6 ----------
 test("V26 R-5 spend runaway: fires on a >3× week-over-week jump, cites both weeks; silent on healthy", async () => {
   const pricing = await loadPricing({});
   const ev = (date, cost, source = "store") => ({
@@ -1443,7 +1443,7 @@ test("V26 R-6 orphan spend: fires against a real git repo with no commits in win
   assert.ok(!doctor([ev(g.dir, 2.0), ev(g.dir, 2.0)], pricing).some((x) => x.rule === "R-6 orphan spend"), "under $X threshold stays silent");
 });
 
-// ---------- SPEC-3-5 §V5.M11: the ulp/ home stands alone ----------
+// ---------- the ulp/ home stands alone ----------
 test("V32: ulp/ is a self-contained protocol home — the py reader passes the kit from a copy of that folder alone",
   { skip: !havePython && "python3 unavailable" }, () => {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -1468,7 +1468,7 @@ test("V32: ulp/ is a self-contained protocol home — the py reader passes the k
 
 });
 
-// ---------- SPEC-3-5 §V5.M12: the OpenTelemetry seam ----------
+// ---------- the OpenTelemetry seam ----------
 import { toOtlp, fromOtlp } from "../src/ulp/otel.js";
 
 test("V28: export --otel writes OTLP/JSON; ingest --otel round-trips an identical ledger", () => {
@@ -1546,7 +1546,7 @@ test("V29: every gen_ai.* name in the mapping (and in code) exists in the pinned
   for (const n of summary.mapped) assert.ok(pinned.has(n), `drift: code emits ${n}, the pin doesn't know it [29]`);
 });
 
-// ---------- SPEC-3-5 §V5.M13: pricingHash + attest + init --team ----------
+// ---------- pricingHash + attest + init --team ----------
 test("V30: pricingHash changes iff the effective table changes; no table applied ⇒ stable null marker", async () => {
   const { loadPricing } = await import("../src/pricing.js");
   const base = await loadPricing({});

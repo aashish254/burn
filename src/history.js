@@ -1,6 +1,6 @@
-// SPEC-3-5 §V4.A — snapshots are ordinary ULP bundles in a known folder.
+// Snapshots are ordinary ULP bundles in a known folder.
 // Nothing custom: history IS bundles. A snapshot joins later reports through
-// the same §E.2 union identity that merge and ingest already use, so
+// the same union identity that merge and ingest already use, so
 // transcript deletion stops being data deletion.
 
 import fs from "node:fs";
@@ -12,7 +12,7 @@ export function historyDir() {
 }
 
 // UTC minute-resolution name; two snapshots in one minute collide on purpose —
-// re-running `burn snapshot` overwrites, which is the idempotence §V4.A asks for.
+// re-running `burn snapshot` overwrites, which keeps history idempotent.
 export function snapshotName(d = new Date()) {
   const p = (n) => String(n).padStart(2, "0");
   return (
@@ -30,7 +30,7 @@ export function writeSnapshot(doc) {
 }
 
 // Newer snapshots FIRST: mergeBundles is first-wins on identity collisions, so
-// document order encodes the §V4.A tie-break (live > snapshot; new > old).
+// document order encodes the tie-break (live > snapshot; new > old).
 // Malformed files are skipped with a stderr note — history must never break
 // a report.
 export function loadSnapshots() {

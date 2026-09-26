@@ -56,7 +56,7 @@ function cacheHitRate(tokens) {
 }
 
 // Bucket a set of costed events into the ledger document. Pure over events —
-// this is ALSO the recompute path for `burn merge` (SPEC-2 §E.2: buckets are
+// this is ALSO the recompute path for `burn merge`: buckets are
 // rebuilt from the merged event set, never summed from pre-aggregated rows).
 // events: normalized UsageEvent + { cost:number|null, costSource }.
 export function aggregateEvents(events, options = {}) {
@@ -84,7 +84,7 @@ export function aggregateEvents(events, options = {}) {
     bump(scope(byAgent, ev.agent), ev, cost);
     bump(scope(byDay, ev.date), ev, cost);
 
-    // SPEC-2 §B: total resolution — every event lands in exactly one unit,
+    // Total resolution — every event lands in exactly one unit,
     // so Σ units.cost == totals.cost by construction (H11 invariant).
     const unit = resolveUnit(ev, options.attributes);
     const uScope = scope(byUnit, `${unit.kind}:${unit.name}`);
@@ -132,14 +132,14 @@ export function aggregateEvents(events, options = {}) {
 }
 
 // Extract and cost events WITHOUT bucketing — the input shape that
-// `burn ingest` and (v4) history merge union against (SPEC §E.2 identity).
+// `burn ingest` and history merge union against the same event identity.
 export async function costEvents(extractors, pricing, options = {}) {
   const since = options.since || null;
   const until = options.until || null; // exclusive upper bound (monthly report window)
   const costed = [];
   for (const mod of extractors) {
     for await (const ev of mod.extract()) {
-      // SPEC §7: with --since, undated events cannot be proven in range → excluded.
+      // With --since, undated events cannot be proven in range → excluded.
       if (since && (ev.date === "unknown" || ev.date < since)) continue;
       if (until && (ev.date === "unknown" || ev.date >= until)) continue;
       const cost = resolveCost(ev, pricing);

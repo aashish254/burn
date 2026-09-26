@@ -1,4 +1,4 @@
-// SPEC-3-5 §V3 — ULP 1.0 concretization: load the schema (data, not code),
+// ULP 1.0 concretization: load the schema (data, not code),
 // negotiate versions, and purify a burn bundle into a pure-core ULP document.
 // The schema itself lives at ulp/schema-1.0.json at the repo root — portable
 // to the standalone ULP home (M11) without touching burn code.
@@ -28,7 +28,7 @@ export function ulpVersionOf(doc) {
   return BURN_TO_ULP[doc?.specVersion] || null;
 }
 
-// §V3.A negotiation: major mismatch → {ok:false}; newer minor → warn and
+// Version negotiation: major mismatch → {ok:false}; newer minor → warn and
 // validate with unknown fields ignored; older equal → strict.
 export function negotiate(doc) {
   const v = ulpVersionOf(doc);
@@ -65,7 +65,7 @@ function deepPurify(node) {
   if (node !== null && typeof node === "object") {
     const out = {};
     for (const [k, v] of Object.entries(node)) {
-      if (k.startsWith("x-")) continue; // §V3.A: --ulp strips ALL extension fields
+      if (k.startsWith("x-")) continue; // --ulp strips ALL extension fields
       out[k] = deepPurify(v);
     }
     return out;

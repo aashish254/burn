@@ -9,7 +9,7 @@
 set -euo pipefail
 
 REPO="aashish254/burn"
-VERSION="${BURN_VERSION:-v0.1.0}"
+VERSION="${BURN_VERSION:-v1.0.0}"
 PREFIX="${BURN_HOME:-$HOME/.burn-cli}"
 BIN_DIR="${BURN_BIN_DIR:-$HOME/.local/bin}"
 BASE_URL="${BURN_BASE_URL:-https://github.com/$REPO/releases/download}"

@@ -1,4 +1,4 @@
-// SPEC-3-5 §V3.C — the conformance kit runner. Vectors under
+// The conformance kit runner. Vectors under
 // ulp/conformance/vectors/ are pure JSON: {id, name, kind, bundle|bundles,
 // expect} — any language can implement a runner against the schema + merge
 // rules without reading a line of burn code (ulp-reader.py does exactly that).

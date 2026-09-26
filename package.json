@@ -1,6 +1,6 @@
 {
   "name": "burn-usage",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Where did your AI budget actually go? A zero-dependency local ledger across your coding agents.",
   "type": "module",
   "bin": {
