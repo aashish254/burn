@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>burn — the local cost ledger for your AI coding agents</title>
+<meta name="description" content="burn reads the transcripts your coding agents already leave on disk and tells you, per repo, model, day and git branch, what you actually spent — with honest billed / estimated / unpriced provenance. Zero dependencies. No network. Nothing leaves your machine.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#EFEEEA">
+<meta property="og:title" content="burn — the local cost ledger for your AI coding agents">
+<meta property="og:description" content="Know what each feature actually cost. Across Claude Code, OpenCode, Codex and Gemini CLI. Local, zero-dependency, honest about every dollar.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEEEA;
+    --panel:#F6F5F1;
+    --ink:#1A1B1D;
+    --graphite:#6C6C65;
+    --rule:#D8D6CF;
+    --ember:#B5402A;
+    --ember-bright:#D65A34;
+    --green:#2E4A3D;
+    --slate:#14171C;
+    --slate-line:#262B33;
+    --slate-ink:#E7E5DE;
+    --slate-mute:#8B93A0;
+    --sans:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --maxw:1140px;
+    --pad:clamp(20px, 5vw, 64px);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:light;background:var(--paper)}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:17px;
+    line-height:1.6;
+    font-weight:400;
+    letter-spacing:-0.006em;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{font-weight:700;letter-spacing:-0.03em;line-height:1.04;margin:0;text-wrap:balance}
+  p{margin:0;text-wrap:pretty}
+  a{color:inherit;touch-action:manipulation}
+  section[id],main[id]{scroll-margin-top:84px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+  .skip{position:absolute;left:-9999px;top:0;z-index:100;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:0 0 8px 0;font-size:14px}
+  .skip:focus{left:8px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+  /* ---------- masthead ---------- */
+  header.masthead{
+    border-bottom:1px solid var(--rule);
+    background:var(--paper);
+    position:sticky;top:0;z-index:20;
+  }
+  .masthead-row{
+    display:flex;align-items:center;gap:22px;
+    height:64px;
+  }
+  .wordmark{display:flex;align-items:center;gap:9px;font-weight:700;font-size:20px;letter-spacing:-0.04em;text-decoration:none}
+  .wordmark svg{display:block}
+  .masthead-meta{
+    margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--graphite);
+    letter-spacing:0.01em;
+  }
+  nav.links{display:flex;gap:14px;font-size:14.5px;font-weight:500}
+  nav.links a{text-decoration:none;color:var(--graphite);border-bottom:2px solid transparent;padding:10px 4px 8px;transition:color .15s ease,border-color .15s ease}
+  nav.links a:hover{color:var(--ink)}
+  nav.links a.gh{color:var(--ink)}
+  .gh-btn{display:inline-flex;align-items:center;gap:7px}
+
+  /* ---------- hero ---------- */
+  .hero{padding-block:clamp(48px,7vw,84px) clamp(40px,6vw,72px)}
+  .hero-grid{display:grid;grid-template-columns:1.02fr 1.08fr;gap:clamp(32px,5vw,60px);align-items:center}
+  .eyebrow{font-family:var(--mono);font-size:13px;color:var(--ember);letter-spacing:.02em;margin-bottom:20px}
+  h1{font-size:clamp(38px,5.2vw,60px)}
+  h1 .under{color:var(--ink);box-shadow:inset 0 -0.14em 0 var(--ember);}
+  .lede{font-size:clamp(18px,2vw,21px);color:var(--graphite);max-width:40ch;margin-top:22px;line-height:1.5}
+  .lede b{color:var(--ink);font-weight:500}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:30px}
+  .cmd{
+    font-family:var(--mono);font-size:13.5px;background:var(--slate);color:var(--slate-ink);
+    padding:10px 13px;border-radius:8px;display:inline-flex;align-items:center;gap:9px;
+    border:1px solid var(--slate-line);
+  }
+  .cmd .dollar{color:var(--slate-mute)}
+  .cmd .param{color:var(--slate-mute)}
+  .btn{
+    text-decoration:none;font-weight:500;font-size:14.5px;padding:10px 16px;border-radius:8px;
+    display:inline-flex;align-items:center;gap:9px;transition:transform .12s ease, background .15s ease, border-color .15s ease;
+    touch-action:manipulation;
+  }
+  .btn-primary{background:var(--ember);color:#fff}
+  .btn-primary:hover{background:#9B3523}
+  .btn-ghost{border:1px solid var(--rule);color:var(--ink);background:var(--panel)}
+  .btn-ghost:hover{border-color:var(--graphite)}
+
+  /* terminal slab = the hero object */
+  .term{
+    background:var(--slate);border-radius:12px;border:1px solid var(--slate-line);
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -30px rgba(20,23,28,.55);
+    overflow:hidden;
+  }
+  .term-bar{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--slate-line);background:#101319}
+  .term-bar .dot{width:11px;height:11px;border-radius:50%;background:#39404b}
+  .term-bar .title{margin-left:6px;font-family:var(--mono);font-size:12px;color:var(--slate-mute)}
+  .term-body{padding:18px 16px 22px;font-family:var(--mono);font-size:clamp(9.4px,2.5vw,11.9px);line-height:1.62;color:var(--slate-ink);overflow-x:auto}
+  .term-body .p{color:var(--slate-mute)}
+  .term-body .p .pr{color:var(--ember-bright)}
+  .term-body .hd{color:var(--slate-mute);letter-spacing:.01em}
+  .term-body .sp{display:block;height:10px}
+  .term-body .amt{color:#fff;font-weight:600}
+  .term-body .rule{color:#2f3742;letter-spacing:-1px;user-select:none}
+  .term-body .bar{color:var(--ember-bright)}
+  .term-body .dots{color:#39404b;letter-spacing:-1px;user-select:none}
+  .term-body .z{color:var(--slate-mute)}
+  .term-body .g{color:#77b08f}
+  .term-body .row{display:block;white-space:pre}
+  .term-cap{padding:12px 16px;border-top:1px solid var(--slate-line);background:#101319;font-size:12.5px;color:var(--slate-mute);font-family:var(--mono)}
+  .term-cap b{color:var(--slate-ink);font-weight:500}
+
+  /* ---------- running total ---------- */
+  .total{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--panel)}
+  .total-row{display:flex;flex-wrap:wrap;gap:0}
+  .tcell{flex:1 1 0;min-width:150px;padding:26px 24px;border-left:1px solid var(--rule)}
+  .tcell:first-child{border-left:0}
+  .tcell .lbl{font-size:13px;color:var(--graphite);margin-bottom:6px}
+  .tcell .fig{font-family:var(--mono);font-size:clamp(24px,3vw,30px);font-weight:500;letter-spacing:-.03em;line-height:1}
+  .tcell .fig.em{color:var(--ember)}
+  .tcell .fig.gr{color:var(--green)}
+  .tcell .unit{font-size:13px;color:var(--graphite);font-family:var(--sans);font-weight:400}
+
+  /* ---------- generic section ---------- */
+  section.block{padding-block:clamp(56px,8vw,96px)}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:8px}
+  .sec-head h2{font-size:clamp(27px,3.6vw,38px)}
+  .sec-note{font-family:var(--mono);font-size:12.5px;color:var(--graphite)}
+  .sec-intro{max-width:56ch;color:var(--graphite);font-size:18px;margin-top:14px}
+  .sec-intro b{color:var(--ink);font-weight:500}
+
+  /* line items (not cards) */
+  .items{margin-top:38px;border-top:1px solid var(--rule)}
+  .item{
+    display:grid;grid-template-columns:210px 1fr;gap:24px;align-items:start;
+    padding:22px 4px;border-bottom:1px solid var(--rule);
+  }
+  .item .k{font-weight:700;font-size:18px;letter-spacing:-.02em;display:flex;align-items:flex-start;gap:11px}
+  .item .k .mk{width:9px;height:9px;border-radius:2px;background:var(--ember);flex:none;margin-top:10px}
+  .item .v{color:var(--graphite);font-size:16.5px;line-height:1.55}
+  .item .v code{font-family:var(--mono);font-size:.92em;background:#e7e5df;color:var(--ink);padding:1px 6px;border-radius:5px}
+
+  /* provenance */
+  .prov{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:38px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .pcell{padding:28px 26px;border-left:1px solid var(--rule);position:relative}
+  .pcell:first-child{border-left:0}
+  .pcell .tag{font-family:var(--mono);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;margin-bottom:12px}
+  .pcell .tag::before{content:"";width:10px;height:10px;border-radius:50%}
+  .pcell.billed .tag{color:var(--green)} .pcell.billed .tag::before{background:var(--green)}
+  .pcell.est .tag{color:var(--ember)} .pcell.est .tag::before{background:var(--ember)}
+  .pcell.unp .tag{color:var(--graphite)} .pcell.unp .tag::before{background:var(--graphite)}
+  .pcell h3{font-size:16px;font-weight:500;letter-spacing:-.01em;margin-bottom:7px}
+  .pcell p{color:var(--graphite);font-size:15px;line-height:1.55}
+  .prov-promise{margin-top:22px;font-size:16.5px;color:var(--graphite);max-width:62ch}
+  .prov-promise b{color:var(--ink);font-weight:500}
+
+  /* ---------- ULP ---------- */
+  .ulp{background:var(--slate);color:var(--slate-ink)}
+  .ulp .sec-head h2{color:#fff}
+  .ulp .sec-note{color:var(--slate-mute)}
+  .ulp .sec-intro{color:#b7bec9}
+  .ulp .sec-intro b{color:#fff;font-weight:500}
+  .ulp-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,4vw,48px);align-items:center;margin-top:40px}
+  .code{
+    background:#0E1116;border:1px solid var(--slate-line);border-radius:12px;padding:20px 20px;
+    font-family:var(--mono);font-size:12.9px;line-height:1.6;overflow-x:auto;color:#c8cfda;
+  }
+  .code .key{color:#7fb0d8} .code .str{color:#9ecf9f} .code .num{color:#e6b673}
+  .code .com{color:var(--slate-mute)}
+  .code .k2{color:var(--ember-bright)}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .badge{
+    border:1px solid var(--slate-line);border-radius:8px;padding:13px 16px;background:#101319;min-width:132px;
+  }
+  .badge .n{font-family:var(--mono);font-size:22px;color:#fff;font-weight:600;letter-spacing:-.02em}
+  .badge .l{font-size:12.5px;color:var(--slate-mute);margin-top:2px}
+  .ulp-foot{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:26px}
+  .btn-ulp{background:#fff;color:var(--slate)} .btn-ulp:hover{background:#e7e5de}
+  .btn-line{border:1px solid var(--slate-line);color:var(--slate-ink)} .btn-line:hover{border-color:var(--slate-mute)}
+  .ulp-linknote{font-family:var(--mono);font-size:12.5px;color:var(--slate-mute)}
+
+  /* ---------- install ---------- */
+  .install-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,54px);align-items:center}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:s}
+  .steps li{counter-increment:s;display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+  .steps li:last-child{border-bottom:0}
+  .steps li .s{font-family:var(--mono);font-size:12.5px;color:var(--ember);min-width:26px}
+  .steps li .t{font-size:16px}
+  .steps li .t code{font-family:var(--mono);font-size:.9em;background:#e7e5df;padding:1px 6px;border-radius:5px}
+  .inst-term{background:var(--slate);border:1px solid var(--slate-line);border-radius:12px;overflow:hidden}
+  .inst-term .term-body{padding:18px}
+  .inst-term .c{color:var(--slate-ink)}
+  .inst-term .f{color:var(--slate-mute)}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--rule);background:var(--panel);padding-block:40px}
+  .foot-row{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+  .foot-row .wordmark{font-size:18px}
+  .foot-meta{font-family:var(--mono);font-size:12.5px;color:var(--graphite);margin-left:auto;text-align:right;line-height:1.8}
+  .foot-links{display:flex;gap:20px;font-size:14px}
+  .foot-links a{color:var(--graphite);text-decoration:none} .foot-links a:hover{color:var(--ink)}
+  .privacy{margin-top:24px;padding-top:22px;border-top:1px solid var(--rule);color:var(--graphite);font-size:14px;display:flex;gap:10px;align-items:flex-start;max-width:80ch}
+  .privacy svg{flex:none;margin-top:2px}
+
+  /* focus + motion */
+  a:focus-visible,button:focus-visible{outline:2px solid var(--ember);outline-offset:3px;border-radius:4px}
+  .ulp a:focus-visible{outline-color:var(--ember-bright)}
+  .reveal .row{opacity:1}
+  @media (prefers-reduced-motion:no-preference){
+    .term-body .row{animation:line 420ms cubic-bezier(.2,.7,.2,1) both}
+    @keyframes line{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+    .term-body .row:nth-child(1){animation-delay:.05s}.term-body .row:nth-child(2){animation-delay:.11s}
+    .term-body .row:nth-child(3){animation-delay:.17s}.term-body .row:nth-child(4){animation-delay:.23s}
+    .term-body .row:nth-child(5){animation-delay:.29s}.term-body .row:nth-child(6){animation-delay:.35s}
+    .term-body .row:nth-child(7){animation-delay:.41s}.term-body .row:nth-child(8){animation-delay:.47s}
+    .term-body .row:nth-child(9){animation-delay:.53s}.term-body .row:nth-child(10){animation-delay:.59s}
+    .term-body .row:nth-child(11){animation-delay:.65s}
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr;gap:38px}
+    .term{order:-1}
+    .ulp-grid,.install-grid{grid-template-columns:1fr}
+    .item{grid-template-columns:1fr;gap:8px}
+    .prov{grid-template-columns:1fr}
+    .pcell{border-left:0;border-top:1px solid var(--rule)} .pcell:first-child{border-top:0}
+  }
+  @media (max-width:560px){
+    .masthead-meta{display:none}
+    .sec-head .sec-note{display:none}
+    nav.links a:not(.gh){display:none}
+    .tcell{min-width:50%;flex:1 1 50%}
+    nav.links{gap:14px}
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#top">Skip to content</a>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="wordmark" href="#top" aria-label="burn — home">
+      <svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M10.5 0.5c1.6 3.4-.6 5-1.8 6.7C7 10 6 12 6.6 14.6c-1.1-.6-1.9-1.7-2.2-3C3 13 2.6 14.4 2.6 15.8 2.6 19.2 5.5 21.5 9.8 21.5c4.6 0 7.6-2.7 7.6-6.6 0-5.5-4.3-7-6.9-14.4zM9.9 18.8c-1.5 0-2.6-1-2.6-2.4 0-1.6 1.4-2.3 2.1-4.3.7 2 3.1 2.9 3.1 4.7 0 1.3-1.1 2-2.6 2z" fill="#B5402A"/></svg>
+      burn
+    </a>
+    <span class="masthead-meta">ledger · local · v1–v5</span>
+    <nav class="links" aria-label="Primary">
+      <a href="#how">How it works</a>
+      <a href="#protocol">ULP</a>
+      <a href="#install">Install</a>
+      <a class="gh" href="https://github.com/aashish254/burn"><span class="gh-btn"><svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.58-.71-.34.17-.02-.6.99-.79.6.08 1.6-.09 1.99-.9.1-.17.32-.66.58-.81-.02-.2-.19-.55-.35-.68-.9-.1-1.79-.9-1.79-.9-1.06-.68-.14-1.28-.14-1.28.82-.06.94-.9.94-.9.55-.94 1.44-.67 1.79-.51.06-.4.21-.67.38-.82-1.37-.16-2.81-.68-2.81-3.05 0-.67.24-1.22.63-1.65-.06-.15-.27-.79.06-1.63 0 0 .52-.17 1.7.63.49-.14 1.02-.2 1.55-.21.53.01 1.06.07 1.55.21 1.18-.8 1.7-.63 1.7-.63.33.84.12 1.48.06 1.63.39.43.63.98.63 1.65 0 2.37-1.45 2.89-2.83 3.04.22.19.42.57.42 1.14 0 .82-.01 1.48-.01 1.69 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> GitHub</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">the local cost ledger for AI coding agents</p>
+        <h1>See what each feature <span class="under">actually cost.</span></h1>
+        <p class="lede">burn reads the transcripts your agents already write to disk — <b>Claude Code, OpenCode, Codex, Gemini CLI</b> — and adds it up per repo, model, day and git branch. Honest about every dollar. <b>Nothing leaves your machine.</b></p>
+        <div class="cta-row">
+          <code class="cmd"><span class="dollar">$</span> npm link <span class="param">burn</span></code>
+          <a class="btn btn-primary" href="https://github.com/aashish254/burn">Get the source</a>
+          <a class="btn btn-ghost" href="#protocol">Read the protocol</a>
+        </div>
+      </div>
+
+      <figure class="term">
+        <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">~/project — burn</span></div>
+        <div class="term-body">
+          <span class="row"><span class="p"><span class="pr">$</span> burn</span></span>
+          <span class="row"><span class="hd">  claude-code, opencode · 118 events</span></span>
+          <span class="row"><span class="sp"></span></span>
+          <span class="row"><span class="amt">$40.08</span> spent  18.28M tokens  cache <span class="g">50%</span></span>
+          <span class="row"><span class="rule">────────────────────────────────────────────</span></span>
+          <span class="row"><span class="hd">  28 billed · 90 estimated cost events</span></span>
+          <span class="row"><span class="sp"></span></span>
+          <span class="row"><span class="hd">By repository</span></span>
+          <span class="row"><span class="rule">────────────────────────────────────────────</span></span>
+          <span class="row">acme/analytics <span class="bar">██████████████</span> <span class="amt">$40.08</span>   225k</span>
+          <span class="row">acme/api       <span class="dots">··············</span> <span class="z">$0.00</span>    222k</span>
+          <span class="row">pet-habit      <span class="dots">··············</span> <span class="z">$0.00</span>  15.88M</span>
+        </div>
+        <figcaption class="term-cap">Actual output — <b>every figure traced</b> to a real transcript on the machine. Repo names shown redacted.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- RUNNING TOTAL -->
+  <section class="total" aria-label="What burn reports, at a glance">
+    <div class="wrap total-row">
+      <div class="tcell">
+        <div class="lbl">Tracked across</div>
+        <div class="fig">4 <span class="unit">agents</span></div>
+      </div>
+      <div class="tcell">
+        <div class="lbl">Cost provenance</div>
+        <div class="fig">3 <span class="unit">classes</span></div>
+      </div>
+      <div class="tcell">
+        <div class="lbl">Runtime dependencies</div>
+        <div class="fig gr">0</div>
+      </div>
+      <div class="tcell">
+        <div class="lbl">Network calls in core</div>
+        <div class="fig gr">none</div>
+      </div>
+      <div class="tcell">
+        <div class="lbl">Tests · protocol vectors</div>
+        <div class="fig">75 <span class="unit">/ 8</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="block wrap" id="how">
+    <div class="sec-head">
+      <h2>What it answers</h2>
+      <span class="sec-note">burn blame · work · doctor · plan</span>
+    </div>
+    <p class="sec-intro">Every agent quietly logs exactly what it did. Nobody adds it up <b>across tools</b>, and nobody can tell you what <code>feature/payments-refactor</code> actually cost. burn turns that pile of JSONL and SQLite into a ledger.</p>
+    <div class="items">
+      <div class="item">
+        <div class="k"><span class="mk"></span>Per repo, model, day</div>
+        <div class="v">Spend broken out by repository and model over time. <code>burn repos</code> <code>burn daily</code></div>
+      </div>
+      <div class="item">
+        <div class="k"><span class="mk"></span>Dollars per work unit</div>
+        <div class="v">Joins usage to your git history — explicit marks, branch names, then repo fallback — so you see cost per feature or PR. <code>burn work</code> <code>burn blame HEAD~3..HEAD</code></div>
+      </div>
+      <div class="item">
+        <div class="k"><span class="mk"></span>Cache &amp; waste, surfaced</div>
+        <div class="v">Prompt-cache hit rate per repo, and a <code>burn doctor</code> that flags paying top-tier prices for tiny turns.</div>
+      </div>
+      <div class="item">
+        <div class="k"><span class="mk"></span>Budgets that fail loudly</div>
+        <div class="v">Set a ceiling and burn exits non-zero when a repo blows past it — a gate a CI job or AgentVault can catch. <code>burn budget --repo X --max 50</code></div>
+      </div>
+      <div class="item">
+        <div class="k"><span class="mk"></span>Durable, mergeable history</div>
+        <div class="v">Snapshot the ledger, merge exports from other machines or agents, and project when your spend runs out — with no double-counting by construction.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVENANCE -->
+  <section class="block wrap" style="padding-top:0">
+    <div class="sec-head">
+      <h2>Never invents a dollar</h2>
+      <span class="sec-note">R1 · R2 · R3</span>
+    </div>
+    <p class="sec-intro">The whole point of a ledger is trust. Every cost event carries a provenance class, and burn will not quietly turn tokens into money.</p>
+    <div class="prov">
+      <div class="pcell billed">
+        <div class="tag">billed</div>
+        <h3>Actually charged</h3>
+        <p>A price the tool recorded itself — OpenCode's real billed cost. Shown as-is, no estimate layered on top.</p>
+      </div>
+      <div class="pcell est">
+        <div class="tag">estimated</div>
+        <h3>List-price derived</h3>
+        <p>Tokens you have, multiplied by an editable price table. Recomputable — the <code>pricingHash</code> makes it reproducible years later.</p>
+      </div>
+      <div class="pcell unp">
+        <div class="tag">unpriced</div>
+        <h3>Tokens only</h3>
+        <p>Models burn can't price honestly are counted in tokens and deliberately left out of dollar totals. No guess.</p>
+      </div>
+    </div>
+    <p class="prov-promise">The rule is absolute: <b>if burn can't price it, it won't say a number.</b> Unpriced events report tokens, never dollars.</p>
+  </section>
+
+  <!-- ULP PROTOCOL -->
+  <section class="ulp block" id="protocol">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>The ledger is a protocol, not a file format</h2>
+        <span class="sec-note">github.com/aashish254/ulp</span>
+      </div>
+      <p class="sec-intro">burn grew <b>ULP — the Usage Ledger Protocol</b>: a tiny, privacy-first JSON format any tool can emit and any team can merge across machines, with no server, account, or network. Two independent implementations must pass the same pure-JSON vectors before a version is ratified.</p>
+      <div class="ulp-grid">
+        <figure><pre class="code"><span class="com">// one ULP 1.0 usage event — dollars only where they're real</span>
+{
+  <span class="key">"agent"</span>: <span class="str">"claude-code"</span>,
+  <span class="key">"sessionId"</span>: <span class="str">"a9c0…"</span>,
+  <span class="key">"index"</span>: <span class="num">7</span>,
+  <span class="key">"model"</span>: <span class="str">"claude-opus-4"</span>,
+  <span class="key">"repo"</span>: <span class="str">"analytics"</span>,        <span class="com">// basename, never a path</span>
+  <span class="key">"date"</span>: <span class="str">"2026-09-13"</span>,
+  <span class="key">"tokens"</span>: { <span class="key">"input"</span>: <span class="num">113431</span>, <span class="key">"output"</span>: <span class="num">111193</span> },
+  <span class="key">"cost"</span>: <span class="num">1.84</span>,
+  <span class="key">"costSource"</span>: <span class="k2">"estimate"</span>,   <span class="com">// billed | estimate | unpriced</span>
+  <span class="key">"pricingHash"</span>: <span class="str">"ad4e736afce6"</span>
+}</pre><figcaption class="sr-only">Example of one ULP 1.0 usage event in JSON.</figcaption></figure>
+        <div>
+          <div class="badges">
+            <div class="badge"><div class="n">2</div><div class="l">reference impls<br>Node · stdlib Python</div></div>
+            <div class="badge"><div class="n">8</div><div class="l">conformance vectors<br>both languages green</div></div>
+            <div class="badge"><div class="n">1.0</div><div class="l">ratified<br>union identity, no double-count</div></div>
+          </div>
+          <div class="ulp-foot">
+            <a class="btn btn-ulp" href="https://github.com/aashish254/ulp">Read ULP 1.0</a>
+            <a class="btn btn-line" href="https://github.com/aashish254/ulp/tree/main/conformance">Conformance kit</a>
+          </div>
+          <p class="ulp-linknote">Extensions live under <code style="font-family:var(--mono);color:#c8cfda">x-&lt;impl&gt;-*</code> namespaces. Core fields are additive-only across 1.x.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="block wrap" id="install">
+    <div class="install-grid">
+      <div>
+        <div class="sec-head"><h2>Get it in a minute</h2></div>
+        <p class="sec-intro">One zero-dependency Node CLI. No install daemon, no account, no telemetry.</p>
+        <ol class="steps">
+          <li><span class="s">01</span><span class="t">Clone and link <code>npm link</code> — or run it straight from the checkout</span></li>
+          <li><span class="s">02</span><span class="t">Point it at your machine — it auto-discovers Claude Code, OpenCode, Codex &amp; Gemini logs</span></li>
+          <li><span class="s">03</span><span class="t">Read your ledger: <code>burn</code> · <code>burn work</code> · <code>burn doctor</code></span></li>
+        </ol>
+      </div>
+      <div class="inst-term">
+        <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="title">install</span></div>
+        <div class="term-body">
+          <span class="row"><span class="p"><span class="pr">$</span> git clone https://github.com/aashish254/burn</span></span>
+          <span class="row"><span class="p"><span class="pr">$</span> cd burn <span class="f">&amp;&amp;</span> npm link</span></span>
+          <span class="row"><span class="sp"></span></span>
+          <span class="row"><span class="p"><span class="pr">$</span> burn</span></span>
+          <span class="row"><span class="hd">🔥 burn  local AI usage ledger</span></span>
+          <span class="row"><span class="hd">  claude-code, opencode · 118 usage events</span></span>
+          <span class="row"><span class="amt">$40.08</span> <span class="c">spent  18.28M tokens  cache <span class="g">50%</span></span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <a class="wordmark" href="#top" aria-label="burn — home">
+        <svg width="18" height="20" viewBox="0 0 20 22" aria-hidden="true"><path d="M10.5 0.5c1.6 3.4-.6 5-1.8 6.7C7 10 6 12 6.6 14.6c-1.1-.6-1.9-1.7-2.2-3C3 13 2.6 14.4 2.6 15.8 2.6 19.2 5.5 21.5 9.8 21.5c4.6 0 7.6-2.7 7.6-6.6 0-5.5-4.3-7-6.9-14.4zM9.9 18.8c-1.5 0-2.6-1-2.6-2.4 0-1.6 1.4-2.3 2.1-4.3.7 2 3.1 2.9 3.1 4.7 0 1.3-1.1 2-2.6 2z" fill="#B5402A"/></svg>
+        burn
+      </a>
+      <div class="foot-links">
+        <a href="https://github.com/aashish254/burn">burn</a>
+        <a href="https://github.com/aashish254/ulp">ULP</a>
+        <a href="https://github.com/aashish254/burn/blob/main/SPEC.md">spec</a>
+        <a href="https://github.com/aashish254/burn/blob/main/README.md">README</a>
+      </div>
+      <div class="foot-meta">MIT licensed · Node ≥ 22.5<br>built locally, ships honestly</div>
+    </div>
+    <p class="privacy">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="#2E4A3D" d="M8 1 2 3.5V7c0 3.9 2.6 6.9 6 8 3.4-1.1 6-4.1 6-8V3.5L8 1Zm0 4c1 0 1.8.8 1.8 1.8S9 8.6 8 8.6s-1.8-.8-1.8-1.8S7 5 8 5Zm0 5.6c1.4 0 2.7.7 3.4 1.7-1 .6-2.2 1-3.4 1s-2.4-.4-3.4-1C5.3 11.3 6.6 10.6 8 10.6Z"/></svg>
+      <span><b style="color:var(--ink);font-weight:500">Local by design.</b> No network in the core, no account, no telemetry. Exports and attestation bundles carry repo basenames and hashes — never absolute paths, hostnames, or session content.</span>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
