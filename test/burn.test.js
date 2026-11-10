@@ -422,7 +422,7 @@ test("budget: exit 0 under, exit 3 over, --json matches", () => {
 
 test("budget: unknown repo exits 2 with candidates; missing flags exit 2", () => {
   const env = fixtureEnv();
-  const miss = spawnCli(["budget", "--repo", "nope-does-not-exist", "--max", "5"], env);
+  const miss = spawnCli(["budget", "--repo", "nope-does-not-exist", "--max", "5", "--period", "all"], env);
   assert.equal(miss.status, 2);
   assert.match(miss.stderr.toString(), /no repository matches/i);
   const noflags = spawnCli(["budget", "--repo", "cheap-repo"], env);
@@ -1216,6 +1216,8 @@ test("V24: live-wins on identity collision; between snapshots, newer generatedAt
 
 test("[23]: --history defaults — ON for forecast and budget month, OFF for plain summary", () => {
   const { env, root, file } = histFixture();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/2026-09-20/g, `${currentMonth}-01`));
   assert.equal(spawnCli(["snapshot"], env).status, 0);
   fs.rmSync(file);
   assert.equal(spawnCli(["--json"], env).status, 1, "summary defaults to history OFF (v1/v2 stability)");
