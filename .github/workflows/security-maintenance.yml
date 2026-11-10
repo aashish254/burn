@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   codeql:
+    if: github.event_name != 'pull_request' || github.actor != 'dependabot[bot]'
     name: CodeQL (javascript-typescript)
     runs-on: ubuntu-latest
     permissions:
@@ -21,7 +22,7 @@ jobs:
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: javascript-typescript
-      - uses: github/codeql-action/autobuild@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+          build-mode: none
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
 
   scorecard:
