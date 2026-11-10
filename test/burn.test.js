@@ -422,6 +422,7 @@ test("budget: exit 0 under, exit 3 over, --json matches", () => {
 
 test("budget: unknown repo exits 2 with candidates; missing flags exit 2", () => {
   const env = fixtureEnv();
+  // The default current-month window would exclude this dated fixture later in the year.
   const miss = spawnCli(["budget", "--repo", "nope-does-not-exist", "--max", "5", "--period", "all"], env);
   assert.equal(miss.status, 2);
   assert.match(miss.stderr.toString(), /no repository matches/i);
